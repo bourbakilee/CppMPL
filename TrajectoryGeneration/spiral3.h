@@ -6,9 +6,8 @@
 using namespace arma;
 #include <boost/math/constants/constants.hpp>
 const double pi = boost::math::constants::pi<double>();
-const double eps1 = 1.e-4;
-const double eps2 = 1.e-6;
-const double eps = 1.e-8;
+const double eps1 = 0.0001;
+const double eps2 = 0.000001;
 const int iter_num = 50;
 
 namespace spiral3 {
@@ -25,8 +24,8 @@ namespace spiral3 {
 	void __xy(double& x,double& y,double s, vec& r, double ref_size = 8.0);
 	// double __y(double s, double r[], double ref_size = 8.0);
 	void __jacobian(mat& Jcb, vec& p, vec& r);
-	void optimize(vec& pp, vec& bd_con, double k_m=0.2);
-	void select_init_val(vec& pp, vec& bd_con, sqlite3* db);
+	void optimize(vec& p, vec& r, vec& bd_con, double k_m = 0.2);
+	void select_init_val(vec& p, vec& r, vec& bd_con, sqlite3* db);
 	void calc_path(vec& p, vec& r, vec& q0, vec& q1, sqlite3* db, double k_m=0.2);
 
 }

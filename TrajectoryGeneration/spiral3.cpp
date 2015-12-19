@@ -1,5 +1,8 @@
 #include "spiral3.h"
 #include <cmath>
+#include <string>
+#include <sstream>
+#include <iostream>
 #include <algorithm>
 
 inline int sgn(double t)
@@ -73,9 +76,10 @@ void spiral3::__jacobian(mat& Jcb, vec& p, vec& r)
 
 // bd_con: boudary conditions [k0,x1,y1,theta1,k1]
 // pp: initial value of parameters [p1,p2,sg]
-void spiral3::optimize(vec& pp, vec& bd_con, double k_m = 0.2)
+void spiral3::optimize(vec& p, vec& r, vec& bd_con, double k_m = 0.2)
 {
 	mat Jcb(3, 3);
+	vec pp{ p[1],p[2],p[4] };
 	if (pp[2] <= 0)
 	{
 		pp[0] = (2 * bd_con[0] + bd_con[4]) / 3;
@@ -83,8 +87,8 @@ void spiral3::optimize(vec& pp, vec& bd_con, double k_m = 0.2)
 		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), 2 * pi - std::abs(bd_con[3]));
 	}
 	vec q_g{ bd_con[1], bd_con[2],bd_con[3] }; // x1,y1,theta1
-	vec p{ bd_con[0], pp[0], pp[1], bd_con[4], pp[2] };
-	vec r{ spiral3::__a(p),spiral3::__b(p), spiral3::__c(p), spiral3::__d(p), p[4] };
+	// vec p{ bd_con[0], pp[0], pp[1], bd_con[4], pp[2] };
+	// vec r{ spiral3::__a(p),spiral3::__b(p), spiral3::__c(p), spiral3::__d(p), p[4] };
 	vec dq{ 1.,1.,1. };
 	int times = 0;
 	double x_p = 0., y_p = 0., theta_p = 0.;
@@ -105,17 +109,101 @@ void spiral3::optimize(vec& pp, vec& bd_con, double k_m = 0.2)
 	}
 	if (std::abs(dq[0]) > eps1 || std::abs(dq[1]) > eps1 || std::abs(dq[2]) > eps2)
 	{
-		pp[0] = pp[1] = 0.;
-		pp[2] = -1.;
+		r[4] = -1.; //通过检查r[4]来判断结果是否有效
 	}
 }
 
-void spiral3::select_init_val(vec& pp, vec& bd_con, sqlite3* db)
+//callback function for sqlite3_exec
+static int callback(void *data, int argc, char **argv, char **azColName)
 {
-
+	double *pp = (double*)data;
+	pp[0] = strtod(argv[0], nullptr);
+	pp[1] = strtod(argv[1], nullptr);
+	pp[2] = strtod(argv[2], nullptr);
+	return 0;
 }
 
+//sql_construct
+inline std::string sql_construct(int i, int j, int k, int l, int m)
+{
+	std::stringstream sql;
+	sql << "select p1,p2,sg from InitialGuessTable where k0=" << i << "and x1=" << j << "and y1=" << k << "and theta1=" << l << "and k1=" << m;
+	return sql.str();
+}
+
+void spiral3::select_init_val(vec& p, vec& r, vec& bd_con, sqlite3* db)
+{
+	int i = std::llround(bd_con[0] * 40);
+	int j = std::llround(bd_con[1] * 16 / 49);
+	int k = std::llround(bd_con[2] * 0.16);
+	int l = std::llround(bd_con[3] * 16 / pi);
+	int m = std::llround(bd_con[4] * 40);
+	//
+	p[0] = bd_con[0];
+	p[3] = bd_con[4];
+	//
+	char* errMsg = nullptr;
+	double pp[3]; //p1,p2,sg
+	std::string sql = sql_construct(i, j, k, l, m);
+	int rc = sqlite3_exec(db, sql.c_str(), callback, pp, &errMsg);
+	if (rc == SQLITE_OK && pp[2]>0)
+	{
+		p[1] = pp[0];
+		p[2] = pp[1];
+		p[4] = r[4] = pp[2];
+		r[0] = spiral3::__a(p);
+		r[1] = spiral3::__b(p);
+		r[2] = spiral3::__c(p);
+		r[3] = spiral3::__d(p);
+	}
+	else if(rc == SQLITE_OK && pp[2]<0)
+	{
+		p[1] = p[2] = r[0] = r[1] = r[2] = r[3] = 0.;
+		p[4] = r[4] = -1.;
+	}
+	else
+	{
+		std::cout << errMsg;
+	}
+}
+
+// q - (x,y,theta,k)
 void spiral3::calc_path(vec& p, vec& r, vec& q0, vec& q1, sqlite3* db, double k_m = 0.2)
 {
+	//bd_con
+	double cc = cos(q0[2]);
+	double ss = sin(q0[2]);
+	double theta_r = std::fmod(q1[2] - q0[2], 2 * pi);
+	if (theta_r > pi)
+		theta_r -= 2 * pi;
+	else if (theta_r < -pi)
+		theta_r += 2 * pi;
+	vec bd_con{ q0[3],(q1[0] - q0[0])*cc + (q1[1] - q0[1])*ss ,-(q1[0] - q0[0])*ss + (q1[1] - q0[1])*cc,theta_r,q1[3] };
+
+	//initilize p and r
+	if (std::abs(theta_r) > pi / 2 || bd_con[1] < 0 || bd_con[1]>50 || std::abs(bd_con[2])>50 || std::abs(bd_con[0])>0.2 || std::abs(bd_con[4])>0.2)
+	{
+		p[1] = (2 * bd_con[0] + bd_con[4]) / 3;
+		p[2] = (bd_con[0] + 2 * bd_con[4]) / 3;
+		p[4] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), 2 * pi - std::abs(bd_con[3]));
+		p[0] = q0[3];
+		p[3] = q1[3];
+		if (p[4] > 0) {
+			r[0] = spiral3::__a(p);
+			r[1] = spiral3::__b(p);
+			r[2] = spiral3::__c(p);
+			r[3] = spiral3::__d(p);
+		}
+		else {
+			r[0] = r[1] = r[2] = r[3] = 0.;
+		}
+		r[4] = p[4];
+	}
+	else
+	{
+		spiral3::select_init_val(p, r, bd_con, db);
+	}
 	
+	// optimize p and r
+	spiral3::optimize(p, r, bd_con);
 }
