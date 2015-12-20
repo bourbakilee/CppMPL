@@ -26,6 +26,11 @@ void test(MatrixXd &mat)
 
 int main()
 {
+	double p[5] = {1.,2.,3.,4.,5.};
+	VectorXd q(5);
+	q << p[0],p[1],p[2],p[3],p[4];
+	cout << q;
+
 	/*
 	VectorXd vec(4);
 	vec << 1 , 2 , 3 , 4;
@@ -39,7 +44,7 @@ int main()
 	test(v2);
 	v2 *= 2.;
 	cout << v2 << '\n';
-	*/
+	
 	Matrix3f A;
 	Vector3f b;
 	A << 1, 2, 3, 4, 5, 6, 7, 8, 10;
@@ -49,7 +54,7 @@ int main()
 	Vector3f x = A.colPivHouseholderQr().solve(b);
 	cout << "The solution is:\n" << x << endl;
 	cout << b.array().cos() << endl;
-
+	*/
 
 	//
 	return 0;

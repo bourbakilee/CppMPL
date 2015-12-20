@@ -1,0 +1,2 @@
+LIBRARY ; mexSpiral3.mexw64
+EXPORTS mexFunction

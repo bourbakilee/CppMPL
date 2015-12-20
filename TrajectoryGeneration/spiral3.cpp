@@ -71,6 +71,7 @@ void spiral3::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
 	Jcb << -c_p_1.dot(sin_t), c_p_2.dot(sin_t), c_s_2.dot(cos_t) - c_s_1.dot(sin_t),
 		c_p_1.dot(cos_t), -c_p_2.dot(cos_t), c_s_2.dot(sin_t) + c_s_1.dot(cos_t),
 		0.375 * p[4], 0.375 * p[4], c_s_1[8];
+	//std::cout << Jcb << '\n';
 	/*
 	Jcb[0, 0] = -arma::dot(c_p_1, sin_t);
 	Jcb[0, 1] = arma::dot(c_p_2, sin_t);
@@ -105,8 +106,9 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 	dq << 1., 1., 1.;
 	int times = 0;
 	double x_p = 0., y_p = 0., theta_p = 0.;
-	while (std::abs(dq[0]) > eps1 || std::abs(dq[1]) > eps1 || std::abs(dq[2]) > eps2 || times < iter_num) {
+	while( (std::abs(dq[0]) > eps1 || std::abs(dq[1]) > eps1 || std::abs(dq[2]) > eps2 )&&( times < iter_num )) {
 		times += 1;
+		//std::cout << "iteration times: " << times << std::endl;
 		spiral3::__jacobian(Jcb, p, r);
 		theta_p = spiral3::__theta(p[4], r);
 		spiral3::__xy(x_p, y_p, p[4], r);
@@ -141,7 +143,7 @@ static int callback(void *data, int argc, char **argv, char **azColName)
 inline std::string sql_construct(int i, int j, int k, int l, int m)
 {
 	std::stringstream sql;
-	sql << "select p1,p2,sg from InitialGuessTable where k0=" << i << "and x1=" << j << "and y1=" << k << "and theta1=" << l << "and k1=" << m;
+	sql << "select p1,p2,sg from InitialGuessTable where k0=" << i << " and x1=" << j << " and y1=" << k << " and theta1=" << l << " and k1=" << m;
 	return sql.str();
 }
 
@@ -169,6 +171,9 @@ void spiral3::select_init_val(VectorXd& p, VectorXd& r, VectorXd& bd_con, sqlite
 		r[1] = spiral3::__b(p);
 		r[2] = spiral3::__c(p);
 		r[3] = spiral3::__d(p);
+		//std::cout << "Initial values: " << std::endl;
+		//std::cout << p << '\n';
+		//std::cout << r << '\n';
 	}
 	else if(rc == SQLITE_OK && pp[2]<0)
 	{
@@ -182,8 +187,9 @@ void spiral3::select_init_val(VectorXd& p, VectorXd& r, VectorXd& bd_con, sqlite
 }
 
 // q - (x,y,theta,k)
-void spiral3::calc_path(VectorXd& p, VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, double k_m)
+void spiral3::spiral3(VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, double k_m)
 {
+	VectorXd p(5);
 	//bd_con
 	double cc = cos(q0[2]);
 	double ss = sin(q0[2]);
@@ -221,4 +227,18 @@ void spiral3::calc_path(VectorXd& p, VectorXd& r, VectorXd& q0, VectorXd& q1, sq
 	
 	// optimize p and r
 	spiral3::optimize(p, r, bd_con);
+}
+
+void spiral3::spiral3(double r[], double q0[], double q1[], sqlite3* db, double k_m)
+{
+	VectorXd rr(5), qs(4), qg(4);
+	//rr << r[0], r[1], r[2], r[3], r[4];
+	qs << q0[0], q0[1], q0[2], q0[3];
+	qg << q1[0], q1[1], q1[2], q1[3];
+	spiral3::spiral3(rr, qs, qg, db, k_m);
+	r[0] = rr[0];
+	r[1] = rr[1];
+	r[2] = rr[2];
+	r[3] = rr[3];
+	r[4] = rr[4];
 }

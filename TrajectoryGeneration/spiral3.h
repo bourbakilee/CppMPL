@@ -27,8 +27,8 @@ namespace spiral3 {
 	void __jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r);
 	void optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m = 0.2);
 	void select_init_val(VectorXd& p, VectorXd& r, VectorXd& bd_con, sqlite3* db);
-	void calc_path(VectorXd& p, VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, double k_m=0.2);
-
+	void spiral3(VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, double k_m=0.2);
+	void spiral3(double r[], double q0[], double q1[], sqlite3* db, double k_m = 0.2);
 }
 
 #endif

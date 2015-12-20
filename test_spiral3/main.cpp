@@ -16,13 +16,13 @@ int main()
 		std::cout << "Opened database successfully" << std::endl;
 	}
 	//
-	VectorXd p(5), r(5);
+	VectorXd r(5);
 	VectorXd q0(4);
 	q0 << 0., 0., 0., 0.01;
 	VectorXd q1(4);
-	q1 << 100., 40., pi / 6, -0.01;
-	spiral3::calc_path(p, r, q0, q1, db);
-	std::cout << p << '\n';
+	// q1 << 100., 40., pi / 6, -0.01;
+	q1 << 40., 30., pi / 6, -0.01;
+	spiral3::calc_path( r, q0, q1, db);
 	std::cout << r << '\n';
 
 	sqlite3_close(db);
