@@ -96,7 +96,7 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 	{
 		pp[0] = (2 * bd_con[0] + bd_con[4]) / 3.;
 		pp[1] = (bd_con[0] + 2 * bd_con[4]) / 3.;
-		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), 2 * pi - std::abs(bd_con[3]));
+		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), two_pi - std::abs(bd_con[3]));
 	}
 	VectorXd q_g(3), q_p(3);
 	q_g << bd_con[1], bd_con[2], bd_con[3]; // x1,y1,theta1
@@ -193,11 +193,11 @@ void spiral3::spiral3(VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, doub
 	//bd_con
 	double cc = cos(q0[2]);
 	double ss = sin(q0[2]);
-	double theta_r = std::fmod(q1[2] - q0[2], 2 * pi);
+	double theta_r = std::fmod(q1[2] - q0[2], two_pi);
 	if (theta_r > pi)
-		theta_r -= 2 * pi;
+		theta_r -= two_pi;
 	else if (theta_r < -pi)
-		theta_r += 2 * pi;
+		theta_r += two_pi;
 	VectorXd bd_con(5);
 	bd_con << q0[3], (q1[0] - q0[0])*cc + (q1[1] - q0[1])*ss, -(q1[0] - q0[0])*ss + (q1[1] - q0[1])*cc, theta_r, q1[3];
 
@@ -206,7 +206,7 @@ void spiral3::spiral3(VectorXd& r, VectorXd& q0, VectorXd& q1, sqlite3* db, doub
 	{
 		p[1] = (2 * bd_con[0] + bd_con[4]) / 3;
 		p[2] = (bd_con[0] + 2 * bd_con[4]) / 3;
-		p[4] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), 2 * pi - std::abs(bd_con[3]));
+		p[4] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), two_pi - std::abs(bd_con[3]));
 		p[0] = q0[3];
 		p[3] = q1[3];
 		if (p[4] > 0) {
