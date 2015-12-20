@@ -30,8 +30,8 @@ inline void spiral3::__xy(double& x, double& y, double s, VectorXd& r, double re
 	for (int i = 0; i < N; i++) {
 		VectorXd ss = VectorXd::LinSpaced(9, s_list[i], s_list[i + 1]);
 		spiral3::__thetas(thetas, ss, r);
-		fs = thetas.cos();
-		gs = thetas.sin();
+		fs = thetas.array().cos();
+		gs = thetas.array().sin();
 		x += h / 3 * (fs[0] + 2 * (fs[2] + fs[4] + fs[6]) + 4 * (fs[1] + fs[3] + fs[5] + fs[7]) + fs[8]);
 		y += h / 3 * (gs[0] + 2 * (gs[2] + gs[4] + gs[6]) + 4 * (gs[1] + gs[3] + gs[5] + gs[7]) + gs[8]);
 	}
@@ -48,26 +48,26 @@ void spiral3::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
 {
 	VectorXd ss = VectorXd::LinSpaced(9,0., p[4]), thetas(9);
 	spiral3::__thetas(thetas, ss, r);
-	VectorXd cos_t = thetas.cos();
-	VectorXd sin_t = thetas.sin();
+	VectorXd cos_t = thetas.array().cos();
+	VectorXd sin_t = thetas.array().sin();
 	VectorXd c_p_1(9);
-	c_p_1 << 0, 1851 / 8192, 363 / 1024, 9963 / 8192, 51 / 64, 14475 / 8192, 891 / 1024, 13083 / 8192, 3 / 8;
+	c_p_1 << 0., 1851 / 8192., 363 / 1024., 9963 / 8192., 51 / 64., 14475 / 8192., 891 / 1024., 13083 / 8192., 3 / 8.;
 	c_p_1 *= p[4] * p[4] / 24;
 	VectorXd c_p_2(9);
-	c_p_2 << 0, 795 / 8192, 123 / 1024, 2187 / 8192, 3 / 64, -2325 / 8192, -405 / 1024, -10437 / 8192, -3 / 8;
+	c_p_2 << 0., 795 / 8192., 123 / 1024., 2187 / 8192., 3 / 64., -2325 / 8192., -405 / 1024., -10437 / 8192., -3 / 8.;
 	c_p_2 *= p[4] * p[4] / 24;
 	VectorXd c_s_1(9);
-	c_s_1 << 0, (2871 * p[0] + 1851 * p[1] - 795 * p[2] + 169 * p[3]) / 8192,
-		(247 * p[0] + 363 * p[1] - 123 * p[2] + 25 * p[3]) / 1024,
-		(4071 * p[0] + 9963 * p[1] - 2187 * p[2] + 441 * p[3]) / 8192,
-		(15 * p[0] + 51 * p[1] - 3 * p[2] + p[3]) / 64,
-		(3655 * p[0] + 14475 * p[1] + 2325 * p[2] + 25 * p[3]) / 8192,
-		(231 * p[0] + 891 * p[1] + 405 * p[2] + 9 * p[3]) / 1024,
-		(3927 * p[0] + 13083 * p[1] + 10437 * p[2] + 1225 * p[3]) / 8192,
-		(p[0] + 3 * p[1] + 3 * p[2] + p[3]) / 8;
+	c_s_1 << 0., (2871 * p[0] + 1851 * p[1] - 795 * p[2] + 169 * p[3]) / 8192.,
+		(247 * p[0] + 363 * p[1] - 123 * p[2] + 25 * p[3]) / 1024.,
+		(4071 * p[0] + 9963 * p[1] - 2187 * p[2] + 441 * p[3]) / 8192.,
+		(15 * p[0] + 51 * p[1] - 3 * p[2] + p[3]) / 64.,
+		(3655 * p[0] + 14475 * p[1] + 2325 * p[2] + 25 * p[3]) / 8192.,
+		(231 * p[0] + 891 * p[1] + 405 * p[2] + 9 * p[3]) / 1024.,
+		(3927 * p[0] + 13083 * p[1] + 10437 * p[2] + 1225 * p[3]) / 8192.,
+		(p[0] + 3 * p[1] + 3 * p[2] + p[3]) / 8.;
 	c_s_1 *=  p[4] / 24;
 	VectorXd c_s_2(9);
-	c_s_2 << 1 / 24, 1 / 6, 1 / 12, 1 / 6, 1 / 12, 1 / 6, 1 / 12, 1 / 6, 1 / 24;
+	c_s_2 << 1 / 24., 1 / 6., 1 / 12., 1 / 6., 1 / 12., 1 / 6., 1 / 12., 1 / 6., 1 / 24.;
 	Jcb << -c_p_1.dot(sin_t), c_p_2.dot(sin_t), c_s_2.dot(cos_t) - c_s_1.dot(sin_t),
 		c_p_1.dot(cos_t), -c_p_2.dot(cos_t), c_s_2.dot(sin_t) + c_s_1.dot(cos_t),
 		0.375 * p[4], 0.375 * p[4], c_s_1[8];
@@ -93,8 +93,8 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 	pp << p[1], p[2], p[4];
 	if (pp[2] <= 0)
 	{
-		pp[0] = (2 * bd_con[0] + bd_con[4]) / 3;
-		pp[1] = (bd_con[0] + 2 * bd_con[4]) / 3;
+		pp[0] = (2 * bd_con[0] + bd_con[4]) / 3.;
+		pp[1] = (bd_con[0] + 2 * bd_con[4]) / 3.;
 		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), 2 * pi - std::abs(bd_con[3]));
 	}
 	VectorXd q_g(3), q_p(3);

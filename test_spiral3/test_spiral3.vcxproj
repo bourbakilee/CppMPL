@@ -69,7 +69,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Dev\boost_1_60_0;D:\Dev\sqlite3\include;D:\Dev\armadillo-6.400.2\include;D:\ProDocs\CppMPL\CppMPL\TrajectoryGeneration;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\boost_1_60_0;D:\Dev\sqlite3\include;D:\Dev\eigen3;D:\ProDocs\CppMPL\CppMPL\TrajectoryGeneration;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Dev\sqlite3\lib;D:\ProDocs\CppMPL\CppMPL\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

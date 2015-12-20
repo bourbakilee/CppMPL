@@ -48,6 +48,7 @@ int main()
 	cout << "Here is the vector b:\n" << b << endl;
 	Vector3f x = A.colPivHouseholderQr().solve(b);
 	cout << "The solution is:\n" << x << endl;
+	cout << b.array().cos() << endl;
 
 
 	//
