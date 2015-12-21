@@ -21,6 +21,7 @@ inline void spiral3::__thetas(VectorXd& thetas, VectorXd& ss, VectorXd& r)
 
 inline void spiral3::__xy(double& x, double& y, double s, VectorXd& r, double ref_size)
 {
+	if (s < 0) { s = r[4]; }
 	int N = (int)std::ceil(s / ref_size);
 	VectorXd s_list = VectorXd::LinSpaced(N + 1, 0., s);
 	//s_list= VectorXd::LinSpaced(N + 1,0., s);
@@ -241,4 +242,30 @@ void spiral3::spiral3(double r[], double q0[], double q1[], sqlite3* db, double 
 	r[2] = rr[2];
 	r[3] = rr[3];
 	r[4] = rr[4];
+}
+
+void spiral3::path(ArrayXXd& points, VectorXd& r, VectorXd& q0, VectorXd& q1, double length, double ref_size)
+{
+	if (length < 0) { length = r[4]; }
+	int N = (int)std::ceil(length / ref_size);
+	double delta = length / N;
+	points.resize(N+1, 5); // s, x, y, theta, k
+	points.col(0) = VectorXd::LinSpaced(N + 1, 0., length); // s
+	points.col(4) = r[0] + points.col(0)*(r[1] + points.col(0)*(r[2] + points.col(0)*r[3])); // k
+	points.col(3) = q0[2] + points.col(0)*(r[0] + points.col(0)*(r[1] / 2 + points.col(0)*(r[2] / 3 + points.col(0)*r[3] / 4))); // theta
+	ArrayXXd cos_t = points.col(3).cos();
+	ArrayXXd sin_t = points.col(3).sin();
+	ArrayXXd d_x = (cos_t.block(0, 0, N, 1) + cos_t.block(1, 0, N, 1))*delta / 2.;
+	ArrayXXd d_y = (sin_t.block(0, 0, N, 1) + sin_t.block(1, 0, N, 1))*delta / 2.;
+	points(0, 1) = q0[0];
+	points(0, 2) = q0[1];
+	for (int i = 1; i <= N; i++)
+	{
+		points(i, 1) = points(i - 1, 1) + d_x(i - 1);
+		points(i, 2) = points(i - 1, 2) + d_y(i - 1);
+	}
+	points(N, 1) = q1[0];
+	points(N, 2) = q1[1];
+	points(N, 3) = q1[2];
+	points(N, 4) = q1[3];
 }

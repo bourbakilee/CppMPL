@@ -26,10 +26,17 @@ void test(MatrixXd &mat)
 
 int main()
 {
-	double p[5] = {1.,2.,3.,4.,5.};
-	VectorXd q(5);
-	q << p[0],p[1],p[2],p[3],p[4];
-	cout << q;
+	VectorXd q(4);
+	q << 1, 2, 3, 4;
+	ArrayXXd t;
+	t.resize(1, 5);
+	t(0, 0) = 0;
+	t(0, 1) = q(0);
+	t(0, 2) = q(1);
+	t(0, 3) = q(2);
+	t(0, 4) = q(3);
+	cout << t;
+
 
 	/*
 	VectorXd vec(4);
