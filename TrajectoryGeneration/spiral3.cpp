@@ -5,9 +5,22 @@
 #include <iostream>
 #include <algorithm>
 
+/*
 inline int sgn(double t)
 {
 	return (t > 0) - (t < 0);
+}
+*/
+
+// -pi - pi
+inline double mod2pi(double theta)
+{
+	double v = std::fmod(theta, two_pi);
+	if (v < -pi)
+		v += two_pi;
+	else if (v > pi)
+		v -= two_pi;
+	return v;
 }
 
 // thetas与ss大小一致
@@ -88,7 +101,7 @@ void spiral3::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
 
 // bd_con: boudary conditions [k0,x1,y1,theta1,k1]
 // pp: initial value of parameters [p1,p2,sg]
-void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
+void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter_num, double k_m)
 {
 	Matrix3d Jcb;
 	VectorXd pp(3);
@@ -97,7 +110,8 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 	{
 		pp[0] = (2 * bd_con[0] + bd_con[4]) / 3.;
 		pp[1] = (bd_con[0] + 2 * bd_con[4]) / 3.;
-		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), two_pi - std::abs(bd_con[3]));
+		// pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), two_pi - std::abs(bd_con[3]));
+		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::abs(bd_con[3]);
 	}
 	VectorXd q_g(3), q_p(3);
 	q_g << bd_con[1], bd_con[2], bd_con[3]; // x1,y1,theta1
@@ -113,12 +127,17 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 		spiral3::__jacobian(Jcb, p, r);
 		theta_p = spiral3::__theta(p[4], r);
 		spiral3::__xy(x_p, y_p, p[4], r);
-		q_p << x_p, y_p, theta_p;
+		q_p << x_p, y_p, mod2pi(theta_p);
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		dq = q_g - q_p;
+		dq[2] = mod2pi(dq[2]);
+		//
 		pp += Jcb.colPivHouseholderQr().solve(dq);
-		pp[0] = p[1] = sgn(pp[0])*std::min(k_m, std::abs(pp[0]));
-		pp[1] = p[2] = sgn(pp[1])*std::min(k_m, std::abs(pp[1]));
-		pp[2] = r[4] = p[4] = std::max(pp[2], 1.);
+		//pp[0] = p[1] = sgn(pp[0])*std::min(k_m, std::abs(pp[0]));
+		pp[0] = p[1] = std::max(std::min(pp[0], k_m), -k_m);
+		//pp[1] = p[2] = sgn(pp[1])*std::min(k_m, std::abs(pp[1]));
+		pp[1] = p[2] = std::max(std::min(pp[1], k_m), -k_m);
+		pp[2] = r[4] = p[4] = std::max(std::min(pp[2],1000.), 1.);
 		r[0] = spiral3::__a(p);
 		r[1] = spiral3::__b(p);
 		r[2] = spiral3::__c(p);
@@ -129,6 +148,8 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, double k_m)
 		r[4] = -1.; //通过检查r[4]来判断结果是否有效
 	}
 }
+
+#ifdef WITH_SQLITE3
 
 //callback function for sqlite3_exec
 static int callback(void *data, int argc, char **argv, char **azColName)
@@ -244,28 +265,63 @@ void spiral3::spiral3(double r[], double q0[], double q1[], sqlite3* db, double 
 	r[4] = rr[4];
 }
 
+#else
+
+void spiral3::spiral3(VectorXd& r, VectorXd& q0, VectorXd& q1, double k_m)
+{
+	// p <-> r
+	VectorXd p(5);
+	p << 0., 0., 0., 0., -1.;
+	//bd_con
+	double cc = cos(q0[2]);
+	double ss = sin(q0[2]);
+	double theta_r = mod2pi(q1[2] - q0[2]);
+	VectorXd bd_con(5);
+	bd_con << q0[3], (q1[0] - q0[0])*cc + (q1[1] - q0[1])*ss, -(q1[0] - q0[0])*ss + (q1[1] - q0[1])*cc, theta_r, q1[3];
+
+	spiral3::optimize(p, r, bd_con);
+}
+
+void spiral3::spiral3(double r[], double q0[], double q1[], double k_m)
+{
+	VectorXd rr(5), qs(4), qg(4);
+	qs << q0[0], q0[1], q0[2], q0[3];
+	qg << q1[0], q1[1], q1[2], q1[3];
+	spiral3::spiral3(rr, qs, qg, k_m);
+	r[0] = rr[0];
+	r[1] = rr[1];
+	r[2] = rr[2];
+	r[3] = rr[3];
+	r[4] = rr[4];
+}
+
+#endif
+
+
+
+// points - {t, s, x, y, theta, k, dk, v, a}, here only 1-5 cols are used
 void spiral3::path(ArrayXXd& points, VectorXd& r, VectorXd& q0, VectorXd& q1, double length, double ref_size)
 {
 	if (length < 0) { length = r[4]; }
 	int N = (int)std::ceil(length / ref_size);
 	double delta = length / N;
-	points.resize(N+1, 5); // s, x, y, theta, k
-	points.col(0) = VectorXd::LinSpaced(N + 1, 0., length); // s
-	points.col(4) = r[0] + points.col(0)*(r[1] + points.col(0)*(r[2] + points.col(0)*r[3])); // k
-	points.col(3) = q0[2] + points.col(0)*(r[0] + points.col(0)*(r[1] / 2 + points.col(0)*(r[2] / 3 + points.col(0)*r[3] / 4))); // theta
-	ArrayXXd cos_t = points.col(3).cos();
-	ArrayXXd sin_t = points.col(3).sin();
+	points.resize(N+1, 9); // t, s, x, y, theta, k, dk, v, a
+	points.col(1) = VectorXd::LinSpaced(N + 1, 0., length); // s
+	points.col(5) = r[0] + points.col(1)*(r[1] + points.col(1)*(r[2] + points.col(1)*r[3])); // k
+	points.col(4) = q0[2] + points.col(1)*(r[0] + points.col(1)*(r[1] / 2 + points.col(1)*(r[2] / 3 + points.col(1)*r[3] / 4))); // theta
+	ArrayXXd cos_t = points.col(4).cos();
+	ArrayXXd sin_t = points.col(4).sin();
 	ArrayXXd d_x = (cos_t.block(0, 0, N, 1) + cos_t.block(1, 0, N, 1))*delta / 2.;
 	ArrayXXd d_y = (sin_t.block(0, 0, N, 1) + sin_t.block(1, 0, N, 1))*delta / 2.;
-	points(0, 1) = q0[0];
-	points(0, 2) = q0[1];
+	points(0, 2) = q0[0];
+	points(0, 3) = q0[1];
 	for (int i = 1; i <= N; i++)
 	{
-		points(i, 1) = points(i - 1, 1) + d_x(i - 1);
-		points(i, 2) = points(i - 1, 2) + d_y(i - 1);
+		points(i, 2) = points(i - 1, 2) + d_x(i - 1);
+		points(i, 3) = points(i - 1, 3) + d_y(i - 1);
 	}
-	points(N, 1) = q1[0];
-	points(N, 2) = q1[1];
-	points(N, 3) = q1[2];
-	points(N, 4) = q1[3];
+	points(N, 2) = q1[0];
+	points(N, 3) = q1[1];
+	points(N, 4) = q1[2];
+	points(N, 5) = q1[3];
 }
