@@ -195,4 +195,34 @@ namespace environment{
 		}
 	}
 
+	CostMap::CostMap(std::vector<ArrayXXd>& maps, double start_time, double end_time, double resolution): data(maps),start_time(start_time),end_time(end_time),resolution(resolution)
+	{
+		if (this->data.size() == 1)
+		{
+			this->start_time = this->end_time = this->delta_t = 0.;
+			this->isdynamic = false;
+		}
+		else
+		{
+			this->delta_t = (this->end_time - this->start_time) / (this->data.size()-1);
+			this->isdynamic = true;
+		}
+		this->cols = maps[0].cols();
+		this->rows = maps[0].rows();
+	}
+
+	double CostMap::query(Vehicle & vehicle)
+	{
+
+		return 0.0;
+	}
+
+	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
+	{
+	}
+
+	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj)
+	{
+	}
+
 }

@@ -117,6 +117,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="config.h" />
     <ClInclude Include="environment.h" />
     <ClInclude Include="spiral3.h" />
     <ClInclude Include="trajectory.h" />

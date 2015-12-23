@@ -1,9 +1,8 @@
 #ifndef SPIRAL3_H
 #define SPIRAL3_H
 
-// user defined options
-#define WITH_SQLITE3
-// #define WITH_BOOST
+
+#include "config.h"
 
 #ifdef WITH_SQLITE3
 #include <sqlite3.h>

@@ -8,6 +8,29 @@ using namespace Eigen;
 
 namespace environment 
 {
+	struct Vehicle {
+		// members
+		double wheel_base;
+		double front_offset;
+		double rear_offset;
+		double width;
+		double length;
+		double cover_radius;
+		double cover_distance;
+		// relative coordinates to rear center
+		Array2d geometric_center;
+		Array2d front_cover_center;
+		Array2d rear_cover_center;
+
+		// construct functions
+		Vehicle():Vehicle(2.94, 1.0,1.28,2.029) {}
+		Vehicle(double wb, double fo, double ro, double wt);
+
+		// member functions
+		void cover_centers(ArrayXXd& cover_points, ArrayXXd& rear_center_traj);
+	};
+
+
 	// no need to use class
 	// easy to be converted to class
 	struct Road
@@ -55,9 +78,17 @@ namespace environment
 		unsigned int cols;
 		unsigned int rows;
 		std::vector<ArrayXXd> data; // vector<ArrayXXd> data
+		double delta_t;
 
-		CostMap() :isdynamic(false),resolution(0.2), cols(500), rows(500), data{ ArrayXXd::Ones(500, 500) } {}
-		CostMap(ArrayXXd&map, double resolution = 0.2) :isdynamic(false),resolution(0.2), cols(map.cols()), rows(map.rows()), data{ map } {}
+		// construct functions
+		CostMap() :isdynamic(false),start_time(0.), end_time(0.),resolution(0.2), cols(500), rows(500), data{ ArrayXXd::Ones(500, 500) }, delta_t(0.) {}
+		CostMap(ArrayXXd&map, double resolution = 0.2) :isdynamic(false), start_time(0.), end_time(0.), resolution(resolution), cols(map.cols()), rows(map.rows()), data{ map }, delta_t(0.) {}
+		CostMap(std::vector<ArrayXXd>& maps, double start_time = 0., double end_time = 0., double resolution = 0.2);
+
+		// member functions
+		// query the cost of a vehicle
+		double query(Vehicle& vehicle);
+		double query(ArrayXXd& traj);
 	};
 
 
