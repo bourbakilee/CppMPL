@@ -117,10 +117,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="environment.h" />
     <ClInclude Include="spiral3.h" />
     <ClInclude Include="trajectory.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="environment.cpp" />
     <ClCompile Include="spiral3.cpp" />
     <ClCompile Include="trajectory.cpp" />
   </ItemGroup>

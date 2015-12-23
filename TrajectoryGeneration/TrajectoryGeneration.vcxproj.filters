@@ -21,12 +21,18 @@
     <ClInclude Include="trajectory.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="environment.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="spiral3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="trajectory.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="environment.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
