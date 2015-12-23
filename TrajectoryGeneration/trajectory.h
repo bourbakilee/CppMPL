@@ -5,6 +5,7 @@
 
 namespace trajectory {
 	struct Configuration {
+		// double s,l; int i,j;
 		double x;
 		double y;
 		double theta;
@@ -20,7 +21,7 @@ namespace trajectory {
 	//kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min }
 	const double kinematic_limits[] = { 0.2, 0.1, 20., 0., 2., -6. };
 	// u: u0,u1,u2. tg
-	// array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a,j,al)]
+	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	void velocity(double u[], double v0, double a0, double vg, double sg);
 	void trajectory(ArrayXXd& traj, double r[], double u[], double ref_length=0., double ref_time=0.);
 

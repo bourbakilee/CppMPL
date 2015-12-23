@@ -24,19 +24,20 @@ void test(MatrixXd &mat)
 	cout << mat << '\n';
 }
 
+void test(double t[])
+{
+	t[0] = 0.;
+	t[1] = 0.;
+}
+
 int main()
 {
-	VectorXd q(4);
-	q << 1, 2, 3, 4;
-	ArrayXXd t;
-	t.resize(1, 5);
-	t(0, 0) = 0;
-	t(0, 1) = q(0);
-	t(0, 2) = q(1);
-	t(0, 3) = q(2);
-	t(0, 4) = q(3);
-	cout << t;
 
+	ArrayXXd t1(3, 2);
+	t1 << 1, 2, 3, 4, 5, 6;
+	cout << t1 << endl;
+	test((double*)(&(t1.row(1))));
+	cout << t1 << endl;
 
 	/*
 	VectorXd vec(4);
