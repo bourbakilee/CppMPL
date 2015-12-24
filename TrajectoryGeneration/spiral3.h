@@ -1,27 +1,14 @@
 #ifndef SPIRAL3_H
 #define SPIRAL3_H
 
-
 #include "config.h"
 
 #ifdef WITH_SQLITE3
 #include <sqlite3.h>
 #endif
 
-#ifdef WITH_BOOST
-#include <boost/math/constants/constants.hpp>
-const double pi = boost::math::constants::pi<double>();
-const double two_pi = 2.*boost::math::constants::pi<double>();
-#else
-const double pi = 3.141592653589793;
-const double two_pi = 6.283185307179586;
-#endif
-
 #include <Eigen/Dense> 
 using namespace Eigen;
-// const int iter_num = 50;
-const double eps1 = 1.e-4;
-const double eps2 = 1.e-6;
 
 namespace spiral3 {
 	// p - [p0=k0, p1=k(sg/3), p2=k(2*sg/3), p3=k1, p4=sg]
@@ -51,6 +38,7 @@ namespace spiral3 {
 #endif
 
 	void path(ArrayXXd& points, VectorXd& r, VectorXd& q0, VectorXd& q1, double length = -1, double ref_size = 0.2);
+
 }
 
 #endif

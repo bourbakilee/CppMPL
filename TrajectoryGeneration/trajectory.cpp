@@ -1,5 +1,7 @@
-#include "trajectory.h"
 #include <cmath>
+
+#include "config.h"
+#include "trajectory.h"
 
 namespace trajectory {
 	// u: u0,u1,u2. tg
@@ -88,123 +90,76 @@ namespace trajectory {
 
 
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
-	double eval_traj(ArrayXXd& traj, double weights[])
+	// weights - (k, dk, v, a, a_c, offset, env, j, t, s)
+	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min }
+	double eval_traj(ArrayXXd& traj, const double *weights, const double* k_limits, environment::Vehicle* vehicle, environment::CostMap* cost_map, environment::Road* road)
 	{
 		int N = traj.rows();
+		ArrayXXd cost(N, 1);
 		ArrayXXd cost_matrix(N,7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
 		cost_matrix.col(0) = weights[0] * traj.col(5).abs(); // |k|
 		cost_matrix.col(1) = weights[1] * traj.col(6).abs(); //|dk|
 		cost_matrix.col(2) = weights[2] * traj.col(7)*traj.col(7); // v^2
 		cost_matrix.col(3) = weights[3] * traj.col(8)*traj.col(8); // a^2
 		cost_matrix.col(4) = weights[4] / weights[2] * traj.col(5).abs()*cost_matrix.col(2); // v^2*k
+		if (road != nullptr)
+		{
+			ArrayXXd sl(N, 2);
+			road->traj2sl(traj, sl);
+			cost_matrix.col(5) = weights[5] * sl.col(1); // road
+		}
+		else
+		{
+			cost_matrix.col(5) *= 0.;
+		}
+		if (cost_map != nullptr)
+		{
+			if (vehicle == nullptr)
+				*vehicle = environment::Vehicle();
+			// ArrayXXd cost(N, 1);
+			cost_map->query(*vehicle, traj, cost);
+			cost_matrix.col(6) = weights[6] * cost; // environment
+		}
+		else
+		{
+			cost_matrix.col(6) *= 0.;
+		}
+		// 
+		cost = cost_matrix.rowwise().sum();
+		//
+		// check kinematics limits
+		ArrayXXd flag(N, 4);
+		flag.col(0) = (traj.col(5).abs() > k_limits[0]).cast<double>(); // k
+		flag.col(1) = (traj.col(6).abs() > k_limits[1]).cast<double>(); // dk
+		flag.col(2) = (traj.col(7) > k_limits[2] || traj.col(7) < k_limits[3]).cast<double>(); // v
+		flag.col(4) = (traj.col(8) > k_limits[4] || traj.col(8) < k_limits[5]).cast<double>(); //a
+		ArrayXXd total_flag = flag.rowwise().sum();
+#pragma omp parallel for
+		for (int i = 0; i < N; i++)
+		{
+			if (total_flag(i, 0) > 0)
+				cost(i, 0) = inf;
+		}
+		// truncate the trajectory
+		double total_cost = 0.;
+		int M = 0;
+		while (!std::isinf(cost(M, 0)) && M < N)
+		{
+			total_cost += cost(M, 0);
+			M += 1;
+		}
+		if (M > 0)
+		{
+			ArrayXXd tmp1 = traj.block(0, 0, M, 9);
+			traj.resize(M, 9);
+			traj = tmp1;
+		}
+		else
+		{
+			ArrayXXd tmp2 = traj.row(0);
+			traj.resize(1, 9);
+			traj = tmp2;
+		}
+		return total_cost;
 	}
 }
-
-/*
-// Eigen3 <-> OpenCV : Example
-//
-#define EIGEN_RUNTIME_NO_MALLOC // Define this symbol to enable runtime tests for allocations
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <vector>
-#include <Eigen/IterativeLinearSolvers>
-#include <iostream>
-#include "opencv2/core/eigen.hpp"
-#include "opencv2/opencv.hpp"
-using namespace Eigen;
-using namespace cv;
-using namespace std;
-
-void EnergyFilter(Mat& src,Mat& dst,double alpha)
-{
-int n_pixels=src.rows*src.cols;
-// Image to row-vector
-Mat m=src.reshape(1,n_pixels).clone();
-// To double
-m.convertTo(m,CV_64FC1);
-
-// Eigen vectors
-VectorXd I(n_pixels);
-VectorXd u(n_pixels);
-
-// convert image from openCV to Eigen
-cv2eigen(m,I);
-
-//
-SparseMatrix<double> A(n_pixels,n_pixels);
-
-// Fill sparse martix using triplets
-typedef Eigen::Triplet<double> T;
-std::vector<T> tripletList;
-
-// Filter parameter (smoothing factor)
-//double alpha=-0.1;
-
-// Set values
-for(int i=0;i<n_pixels;i++)
-{
-tripletList.push_back(T(i,i,1+4*alpha));
-if((i+1) < n_pixels){tripletList.push_back(T(i,i+1,-alpha));} // +1
-if((i-1) >= 0){tripletList.push_back(T(i,i-1,-alpha));} // -1
-if((i+src.cols) < n_pixels){tripletList.push_back(T(i,i+src.cols,-alpha));} // +3
-if((i-src.cols) >= 0){tripletList.push_back(T(i,i-src.cols,-alpha));} // -3
-}
-
-// Boundary values of main diag
-tripletList.push_back(T(0,0,1+2*alpha));
-for(int i=1;i<src.cols;i++)
-{
-tripletList.push_back(T(i,i,1+3*alpha));
-}
-
-//
-tripletList.push_back(T(n_pixels-1,n_pixels-1,1+2*alpha));
-for(int i=1;i<src.cols;i++)
-{
-tripletList.push_back(T(i,n_pixels-i-1,1+3*alpha));
-}
-
-// Init sparse matrix
-A.setFromTriplets(tripletList.begin(),tripletList.end());
-
-tripletList.clear();
-// Solver init
-ConjugateGradient<SparseMatrix<double> > cg;
-cg.compute(A);
-// Solve linear systyem
-u = cg.solve(I);
-std::cout << "#iterations:     " << cg.iterations() << std::endl;
-std::cout << "estimated error: " << cg.error()      << std::endl;
-// Get the solution
-dst=Mat(n_pixels,1,CV_64FC1);
-eigen2cv(u,dst);
-dst=dst.reshape(1,src.rows);
-dst.convertTo(dst,CV_8UC1);
-}
-
-
-int main(int argc, char* argv[])
-{
-namedWindow("image");
-namedWindow("result");
-Mat img=imread("d:\\ImagesForTest\\lena.jpg",1);
-imshow("image",img);
-waitKey(10);
-Mat res;
-vector<Mat> ch;
-cv::split(img,ch);
-
-for(int i=0;i<3;i++)
-{
-EnergyFilter(ch[i],res,3);
-res.copyTo(ch[i]);
-}
-
-cv::merge(ch,res);
-// show the resilt
-imshow("result",res);
-waitKey(0);
-return 0;
-}
-
-*/

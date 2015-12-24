@@ -3,7 +3,6 @@
 
 namespace environment{
 
-
 	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
 	{
 		this->cover_radius = std::sqrt(this->length*this->length / 9. + this->width*this->width / 4.);
@@ -215,7 +214,10 @@ namespace environment{
 	void Road::traj2sl(ArrayXXd & traj, ArrayXXd & sl)
 	{
 		int N = traj.rows();
-		sl.resize(N, 2);
+		if (sl.rows() != N && sl.cols()<2)
+		{
+			sl.resize(N, 2);
+		}
 		double tmp[] = { -1.,-1. };
 
 #pragma omp parallel for
@@ -256,7 +258,10 @@ namespace environment{
 	void CostMap::query(Vehicle& vehicle, ArrayXXd & traj, ArrayXXd& cost)
 	{
 		int N = traj.rows();
-		cost.resize(N, 1);
+		if (cost.rows() != N && cost.cols() < 1)
+		{
+			cost.resize(N, 1);
+		}
 
 		ArrayXXd cover_points(N, 6);
 		vehicle.cover_centers(cover_points, traj);

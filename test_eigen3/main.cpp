@@ -1,4 +1,6 @@
 #include <iostream>
+#include <limits>
+#include <string>
 #include <Eigen/Dense> 
 using namespace Eigen;
 using namespace std;
@@ -36,7 +38,24 @@ int main()
 	t1 << 1.1, 2.2, 3.3, 4.4, 5.5, 6.6;
 	Array<unsigned int, Dynamic, 3> t2 = (t1 / 0.1).cast<unsigned int>();
 	cout << t2 << endl;
+	ArrayXXd t3(2, 3);
+	t3 << 1.2, 2.1, 3.4, 4.5, 5.6, 6.7;
+	ArrayXXd t4 = (t3 > t1).cast<double>();
+	cout << t4 << endl;
+	ArrayXXd t5 = (t3 > 4).cast<double>();
+	cout << t5 << endl;
+	
+	double max = std::numeric_limits<double>::max();
+	double inf = std::numeric_limits<double>::infinity();
 
+	if (inf > max)
+		cout << inf << " is greater than " << max << '\n';
+	cout << inf + inf << endl;
+	cout << 0.*inf << endl;
+	char* inf_char = "inf";
+	cout << strtod(inf_char, nullptr) << endl;
+	cout << isinf(inf) << endl;
+	
 	/*
 	ArrayXXd t1(3, 2);
 	t1 << 1, 2, 3, 4, 5, 6;

@@ -1,9 +1,14 @@
 #ifndef TRAJECTORY_H
 #define TRAJECTORY_H
 
-#include "spiral3.h"
+#include <limits>
+// #include "spiral3.h"
+#include <Eigen/Dense> 
+using namespace Eigen;
+#include "environment.h"
 
 namespace trajectory {
+	/*
 	struct Configuration {
 		// double s,l; int i,j;
 		double x;
@@ -16,6 +21,9 @@ namespace trajectory {
 		// member functions
 		void set(double x, double y, double t, double k) { this->x = x; this->y = y; this->theta = t; this->k = k; }
 	};
+	*/
+	// infinity, use isinf() function to determine if a number is infinity
+	const double inf = std::numeric_limits<double>::infinity();
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	const double cost_weights[] = { 10.,10.,1.,0.1,0.1,10.,0.1,0.1,10.,1. };
 	//kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min }
@@ -26,7 +34,8 @@ namespace trajectory {
 	void trajectory(ArrayXXd& traj, double r[], double u[], double ref_length=0., double ref_time=0.);
 
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
-	double eval_traj(ArrayXXd& traj, double weights[]);
+	double eval_traj(ArrayXXd& traj, const double *weights= cost_weights, const double* k_limits=kinematic_limits , environment::Vehicle* vehicle= nullptr, environment::CostMap* cost_map=nullptr, environment::Road* road = nullptr);
+
 }
 
 #endif
