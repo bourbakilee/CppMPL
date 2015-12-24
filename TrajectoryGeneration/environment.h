@@ -17,17 +17,22 @@ namespace environment
 		double length;
 		double cover_radius;
 		double cover_distance;
-		// relative coordinates to rear center
-		Array2d geometric_center;
-		Array2d front_cover_center;
-		Array2d rear_cover_center;
+		// distances to rear center
+		double geometric_center;
+		// double front_cover_center;
+		// double rear_cover_center;
 
 		// construct functions
 		Vehicle():Vehicle(2.94, 1.0,1.28,2.029) {}
 		Vehicle(double wb, double fo, double ro, double wt);
 
 		// member functions
+		// when rear_center_traj has only one row, it represent the state of vehicle
+		// cover_points - [(x1,y1,x2,y2,x3,y3)]
+		// rear_center_traj - [(t,s,x,y,theta....)]
 		void cover_centers(ArrayXXd& cover_points, ArrayXXd& rear_center_traj);
+		// return coordinates of vertexes of vehicle body
+		// void vertexes(ArrayXXd& vertex_list, ArrayXXd& rear_center_traj)
 	};
 
 
@@ -87,8 +92,8 @@ namespace environment
 
 		// member functions
 		// query the cost of a vehicle
-		double query(Vehicle& vehicle);
-		double query(ArrayXXd& traj);
+		// double query(Vehicle& vehicle);
+		void query(Vehicle& vehicle, ArrayXXd& traj, ArrayXXd& cost);
 	};
 
 

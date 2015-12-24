@@ -2,6 +2,37 @@
 #include <functional>
 
 namespace environment{
+
+
+	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
+	{
+		this->cover_radius = std::sqrt(this->length*this->length / 9. + this->width*this->width / 4.);
+		this->cover_distance = 2.*this->length / 3.;
+		this->geometric_center = (wb + fo - ro) / 2; // distances to rear center
+	}
+
+
+	// when rear_center_traj has only one row, it represent the state of vehicle
+	// cover_points - [(x1,y1,x2,y2,x3,y3)] - front, center, rear
+	// rear_center_traj - [(t,s,x,y,theta,....)]
+	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj)
+	{
+		int N = rear_center_traj.rows();
+		if (cover_points.rows() != N)
+		{
+			cover_points.resize(N, 6);
+		}
+		ArrayXXd cos_t = rear_center_traj.col(4).cos();
+		ArrayXXd sin_t = rear_center_traj.col(4).sin();
+		cover_points.col(2) = rear_center_traj.col(2) + this->geometric_center*cos_t; // x2
+		cover_points.col(3) = rear_center_traj.col(3) + this->geometric_center*sin_t; // y2
+		cover_points.col(0) = cover_points.col(2) + this->cover_distance*cos_t; // x1
+		cover_points.col(1) = cover_points.col(3) + this->cover_distance*sin_t; // y1
+		cover_points.col(4) = cover_points.col(2) - this->cover_distance*cos_t; // x3
+		cover_points.col(5) = cover_points.col(3) - this->cover_distance*sin_t; // y3
+	}
+
+
 	Road::Road(const ArrayXXd& center_line, double ref_grid_length, double ref_grid_width, double lane_width, unsigned int lane_num)
 	{
 		// center_line is array: (s,x,y,\theta,k), s=linspae(0.,road_length,N)
@@ -163,7 +194,7 @@ namespace environment{
 		}
 		else
 		{
-			sl[1] = (station(0,0) - x) / cos(station(0,0));
+			sl[1] = (station(0,0) - x) / cos(station(0,2));
 		}
 	}
 
@@ -211,18 +242,58 @@ namespace environment{
 		this->rows = maps[0].rows();
 	}
 
+	/*
 	double CostMap::query(Vehicle & vehicle)
 	{
 
 		return 0.0;
 	}
+	*/
 
-	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
+	// cover_points - [(x1,y1,x2,y2,x3,y3)]
+	// traj - [(t,s,x,y,theta....)]
+	// (x,y) <-> (col, row)
+	void CostMap::query(Vehicle& vehicle, ArrayXXd & traj, ArrayXXd& cost)
 	{
+		int N = traj.rows();
+		cost.resize(N, 1);
+
+		ArrayXXd cover_points(N, 6);
+		vehicle.cover_centers(cover_points, traj);
+		// covert the global coordinates to index of costmap
+		Array<unsigned int, Dynamic, 6> cover_indexes = (cover_points / this->resolution).cast<unsigned int>();
+		if (this->isdynamic)
+		{
+#pragma omp parallel for
+			for (int i = 0; i < N; i++)
+			{
+				if (this->start_time <= traj(i, 0) <= this->end_time)
+				{
+					int t_index = (int)std::floor(traj(i, 0) / this->delta_t);
+					cost(i, 0) = (((t_index + 1)*this->delta_t - traj(i, 0))
+						*(1.5*this->data[t_index](cover_indexes(i, 1), cover_indexes(i, 0)) 
+							+ this->data[t_index](cover_indexes(i, 3), cover_indexes(i, 2)) 
+							+ 0.5*this->data[t_index](cover_indexes(i, 5), cover_indexes(i, 4))) 
+						+ (traj(i, 0) - t_index*this->delta_t))
+						*(1.5*this->data[t_index + 1](cover_indexes(i, 1), cover_indexes(i, 0)) 
+							+ this->data[t_index + 1](cover_indexes(i, 3), cover_indexes(i, 2)) 
+							+ 0.5*this->data[t_index + 1](cover_indexes(i, 5), cover_indexes(i, 4))) 
+						/ this->delta_t;
+				}
+			}
+		}
+		else
+		{
+#pragma omp parallel for
+			for (int i = 0; i < N; i++)
+			{
+					int t_index = (int)std::floor(traj(i, 0) / this->delta_t);
+					cost(i, 0) = 1.5*this->data[0](cover_indexes(i, 1), cover_indexes(i, 0))
+							+ this->data[0](cover_indexes(i, 3), cover_indexes(i, 2))
+							+ 0.5*this->data[0](cover_indexes(i, 5), cover_indexes(i, 4));
+			}
+		}
 	}
 
-	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj)
-	{
-	}
-
+// end of namespace environment
 }
