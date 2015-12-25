@@ -3,11 +3,14 @@
 
 #include <vector>
 #include <cmath>
+// define EIGEN_USE_MKL_ALL
 #include <Eigen\Dense>
-using namespace Eigen;
+
 
 namespace environment 
 {
+	using namespace Eigen;
+
 	struct Vehicle {
 		// members
 		double wheel_base;
@@ -73,6 +76,9 @@ namespace environment
 		void xy2ij(unsigned int ij[], double x, double y);
 		// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 		void traj2sl(ArrayXXd& traj, ArrayXXd& sl);
+		// extend the road length
+		// void extend_road(const ArrayXXd& line);
+		// coid extend_road(const Road& road);
 	};
 
 	struct CostMap {
@@ -93,7 +99,7 @@ namespace environment
 		// member functions
 		// query the cost of a vehicle
 		// double query(Vehicle& vehicle);
-		void query(Vehicle& vehicle, ArrayXXd& traj, ArrayXXd& cost);
+		void query(Vehicle* vehicle, ArrayXXd& traj, ArrayXXd& cost);
 	};
 
 

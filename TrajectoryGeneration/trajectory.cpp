@@ -117,7 +117,7 @@ namespace trajectory {
 			if (vehicle == nullptr)
 				*vehicle = environment::Vehicle();
 			// ArrayXXd cost(N, 1);
-			cost_map->query(*vehicle, traj, cost);
+			cost_map->query(vehicle, traj, cost);
 			cost_matrix.col(6) = weights[6] * cost; // environment
 		}
 		else

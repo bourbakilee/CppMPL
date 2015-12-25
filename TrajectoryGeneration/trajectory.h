@@ -3,11 +3,13 @@
 
 #include <limits>
 // #include "spiral3.h"
+// define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense> 
-using namespace Eigen;
+
 #include "environment.h"
 
 namespace trajectory {
+	using namespace Eigen;
 	/*
 	struct Configuration {
 		// double s,l; int i,j;

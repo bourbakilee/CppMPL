@@ -7,10 +7,13 @@
 #include <sqlite3.h>
 #endif
 
+// define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense> 
-using namespace Eigen;
+
 
 namespace spiral3 {
+	using namespace Eigen;
+
 	// p - [p0=k0, p1=k(sg/3), p2=k(2*sg/3), p3=k1, p4=sg]
 	// r - [a,b,c,d,sg]
 	// p[4], s - must be positive,non-negative
