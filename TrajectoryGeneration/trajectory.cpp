@@ -140,18 +140,20 @@ namespace trajectory {
 			if (total_flag(i, 0) > 0)
 				cost(i, 0) = inf;
 		}
-		// truncate the trajectory
-		double total_cost = 0.;
+		// truncate the trajectory. If the trajectory is in collision with obstacles or violate the kinematic limitations of vehicle, the feasible part of this trajectory will be half truncated.
+		// double total_cost = 0.;
 		int M = 0;
 		while (!std::isinf(cost(M, 0)) && M < N)
 		{
-			total_cost += cost(M, 0);
+			// total_cost += cost(M, 0);
 			M += 1;
 		}
-		if (M > 0)
+		//
+		int Row = M / 2;
+		if (Row > 0)
 		{
-			ArrayXXd tmp1 = traj.block(0, 0, M, 9);
-			traj.resize(M, 9);
+			ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
+			traj.resize(Row, 9);
 			traj = tmp1;
 		}
 		else
@@ -160,6 +162,7 @@ namespace trajectory {
 			traj.resize(1, 9);
 			traj = tmp2;
 		}
-		return total_cost;
+		// return total_cost;
+		return cost.block(0, 0, Row, 1).sum();
 	}
 }

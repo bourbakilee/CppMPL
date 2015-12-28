@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-
+using namespace Eigen;
 /*
 inline int sgn(double t)
 {

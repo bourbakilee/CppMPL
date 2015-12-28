@@ -39,6 +39,8 @@ namespace environment{
 		this->lane_num = lane_num;
 		this->current_lane = (lane_num - 1) / 2;
 		this->target_lane = this->current_lane;
+		this->current_lane_center_line_offset = (this->current_lane - this->lane_num + 0.5)*this->lane_width;
+		this->target_lane_center_line_offset = (this->target_lane - this->lane_num + 0.5)*this->lane_width;
 		this->length = center_line(center_line.rows()-1, 0);
 		this->lane_width = lane_width;
 		this->width = lane_width*lane_num;
@@ -64,6 +66,7 @@ namespace environment{
 		double sl[] = { -1.,-1. };
 		this->xy2sl(sl, q0[0], q0[1]);
 		this->current_lane = std::floor((this->lane_num / 2. + sl[1] / this->lane_width));
+		this->current_lane_center_line_offset = (this->current_lane - this->lane_num + 0.5)*this->lane_width;
 		/*
 		if (this->lane_num % 2)
 		{
@@ -81,6 +84,7 @@ namespace environment{
 		if (0 <= i < this->lane_num)
 		{
 			this->current_lane = i;
+			this->current_lane_center_line_offset = (this->current_lane - this->lane_num + 0.5)*this->lane_width;
 		}
 	}
 
@@ -90,6 +94,7 @@ namespace environment{
 		double sl[] = { -1.,-1. };
 		this->xy2sl(sl, q1[0], q1[1]);
 		this->target_lane = std::floor((this->lane_num / 2. + sl[1] / this->lane_width));
+		this->target_lane_center_line_offset = (this->target_lane - this->lane_num + 0.5)*this->lane_width;
 		/*
 		if (this->lane_num % 2)
 		{
@@ -107,6 +112,7 @@ namespace environment{
 		if (0 <= i < this->lane_num)
 		{
 			this->target_lane = i;
+			this->target_lane_center_line_offset = (this->target_lane - this->lane_num + 0.5)*this->lane_width;
 		}
 	}
 
@@ -124,7 +130,10 @@ namespace environment{
 			q[0] = station(0, 0) - l*sin(station(0, 2));
 			q[1] = station(0,1) + l*cos(station(0,2));
 			q[2] = station(0,2);
-			q[3] = 1 / (1 / station(0,3) - l);
+			if (std::abs(station(0, 3)) < 1.e-8)
+				q[3] = 0.;
+			else
+			    q[3] = 1 / (1 / station(0,3) - l);
 		}
 		else 
 		{

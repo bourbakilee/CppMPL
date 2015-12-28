@@ -7,7 +7,9 @@
 #ifdef TEST_WITH_SQLITE3
 #ifndef WITH_SQLITE3
 #define WITH_SQLITE3
+#include <spiral3.h>
 #include <trajectory.h>
+using namespace Eigen;
 void test_with_sqlite3()
 {
 	sqlite3* db = nullptr;

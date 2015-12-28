@@ -18,5 +18,6 @@ const double two_pi = 6.283185307179586;
 const double eps1 = 1.e-4;
 const double eps2 = 1.e-6;
 
+// define EIGEN_USE_MKL_ALL
 
 #endif //

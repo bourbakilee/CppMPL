@@ -3,16 +3,18 @@
 
 // define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense>
-#include <environment.h>
+#include <TrajectoryGeneration.h>
 
 namespace SearchGraph
 {
 	using namespace Eigen;
 	using namespace environment;
+	using namespace trajectory;
 
 	struct State
 	{
 		//members
+
 		// information about trajectory
 		double time;
 		double length;
@@ -34,30 +36,61 @@ namespace SearchGraph
 		double priority;
 
 		// construct functions
-		State() {}
-		State(int i, int j, Road* road=nullptr, State* goal=nullptr);
-		State(double r_s, double r_l, Road* road = nullptr, State* goal = nullptr);
+
+		State();
+		// goal state is used to calculate heuristic
 		// use the state at the end of trajectory to construct new state
-		State(const ArrayXXd& traj, Road* road = nullptr, State* goal = nullptr);
+
+		// uesd to construct initial state, on-road only
+		State(int i, int j, double velocity, Road* road, State* goal);
+		// uesd to construct initial state, on-road only
+		State(double r_s, double r_l, double velocity, Road* road, State* goal);
+		// used to construct initial state, on-road and off-road
+		State(double x, double y, double theta, double v, State*goal, Road* road = nullptr);
+
+		// used to construct next state, include the goal state, on-road
+		State(State*prev, ArrayXXd& traj, Road* road, State* goal);
 
 		// member functions
+
 		// heuristic function
-		double heuristic(const State& goal);
+		double heuristic(State* goal);
 
 		// non-member functions
+
 		// compare
 		friend bool operator< (const State& s1, const State& s2)
 		{
 			return s1.priority < s2.priority;
 		}
 		// heuristic function for heuristic seaarch algorithms
-		friend double heuristic(const State& s1, const State& s2);
+		friend double heuristic(State* s1, State* s2);
+		// extend the current state
+		// control set
+		void extend();
 	};
 
 	// compute trajectory connect s1 and s2. if s2 is not reachable, s2 will be modified identical to the end state of trajectory.
 	// if trajectory just not exists, return false
-	bool connect(const State& s1, State& s2, ArrayXXd& traj);
+	bool connect(State* s1, State* s2, ArrayXXd& traj);
 
+
+	/*----------------search graph---------------
+	#include <boost/graph/adjacency_list.hpp> using namespace boost;
+ typedef property<edge_weight_t, int> EdgeWeightProperty;
+ typedef boost::adjacency_list<listS, vecS, directedS, no_property,
+ EdgeWeightProperty > mygraph;
+ int main() 
+{ 
+    mygraph g;
+     add_edge (0, 1, 8, g);
+     add_edge (0, 3, 18, g);
+     add_edge (1, 2, 20, g);
+     add_edge (2, 3, 2, g);
+     add_edge (3, 1, 1, g);
+     add_edge (1, 3, 7, g);
+ }
+	--------------------------------------*/
 }
 
 #endif

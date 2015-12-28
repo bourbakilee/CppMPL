@@ -26,7 +26,7 @@ namespace environment
 		// double rear_cover_center;
 
 		// construct functions
-		Vehicle():Vehicle(2.94, 1.0,1.28,2.029) {}
+		Vehicle():Vehicle(2.94, 0.988,1.28,2.029) {}
 		Vehicle(double wb, double fo, double ro, double wt);
 
 		// member functions
@@ -50,6 +50,8 @@ namespace environment
 		unsigned int lane_num; // default: 3
 		unsigned int current_lane;
 		unsigned int target_lane;
+		double current_lane_center_line_offset;
+		double target_lane_center_line_offset;
 		double lane_width;
 		double length;
 		double width; 
@@ -62,6 +64,7 @@ namespace environment
 		
 		// construct functions
 		Road():Road(ArrayXXd::Ones(1,5),1.5,0.5,3.5,3) {}
+		// the first column of road center_line array must be equidistantly
 		Road(const ArrayXXd& center_line, double ref_grid_length = 1.5, double ref_grid_width = 0.5, double lane_width = 3.5, unsigned int lane_num = 3);
 
 		// member functions
