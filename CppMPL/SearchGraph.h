@@ -35,21 +35,21 @@ namespace SearchGraph
 		// priority = cost + heuristic, used for priority queue
 		double priority;
 
-		// construct functions
-
+		// constructors
+		// default constructor
 		State();
 		// goal state is used to calculate heuristic
 		// use the state at the end of trajectory to construct new state
 
 		// uesd to construct initial state, on-road only
-		State(int i, int j, double velocity, Road* road, State* goal);
+		State(int i, int j, double velocity, double acc, Road* road, State* goal);
 		// uesd to construct initial state, on-road only
-		State(double r_s, double r_l, double velocity, Road* road, State* goal);
+		State(double r_s, double r_l, double velocity, double acc, Road* road, State* goal);
 		// used to construct initial state, on-road and off-road
-		State(double x, double y, double theta, double v, State*goal, Road* road = nullptr);
+		State(double x, double y, double theta, double k, double v, double acc, State*goal, Road* road = nullptr);
 
 		// used to construct next state, include the goal state, on-road
-		State(State*prev, ArrayXXd& traj, Road* road, State* goal);
+		State(State*prev, ArrayXXd& traj, int ref_rows, double traj_cost, Road* road, State* goal);
 
 		// member functions
 

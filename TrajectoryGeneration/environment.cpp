@@ -5,7 +5,7 @@ namespace environment{
 
 	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
 	{
-		this->cover_radius = std::sqrt(this->length*this->length / 9. + this->width*this->width / 4.);
+		this->cover_radius = std::sqrt(this->length*this->length / 9. + this->width*this->width)/2.;
 		this->cover_distance = 2.*this->length / 3.;
 		this->geometric_center = (wb + fo - ro) / 2; // distances to rear center
 	}
