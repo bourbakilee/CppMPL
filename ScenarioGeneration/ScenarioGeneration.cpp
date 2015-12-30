@@ -15,6 +15,7 @@ void read_array(const char* filename, ArrayXXd& array)
 	for (int i; i < 500 * 500; i++)
 	{
 		//input >> data[i];
+		// if input number is biger than 1, it should be modified to inf
 		input >> array(i/500, i%500);
 	}
 	//cout << array << endl;

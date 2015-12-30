@@ -28,8 +28,8 @@ namespace trajectory {
 	const double inf = std::numeric_limits<double>::infinity();
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	const double cost_weights[] = { 10.,10.,1.,0.1,0.1,10.,0.1,0.1,10.,1. };
-	//kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min }
-	const double kinematic_limits[] = { 0.2, 0.1, 20., 0., 2., -6. };
+	//kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
+	const double kinematic_limits[] = { 0.2, 0.1, 20., 0., 2., -6., 10.};
 	// u: u0,u1,u2. tg
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	void velocity(double u[], double v0, double a0, double vg, double sg);

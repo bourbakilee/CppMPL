@@ -91,12 +91,12 @@ namespace trajectory {
 
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	// weights - (k, dk, v, a, a_c, offset, env, j, t, s)
-	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min }
+	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
 	double eval_traj(ArrayXXd& traj, const double *weights, const double* k_limits, environment::Vehicle* vehicle, environment::CostMap* cost_map, environment::Road* road)
 	{
 		int N = traj.rows();
 		ArrayXXd cost(N, 1);
-		ArrayXXd cost_matrix(N,7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
+		ArrayXXd cost_matrix(N, 7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
 		cost_matrix.col(0) = weights[0] * traj.col(5).abs(); // |k|
 		cost_matrix.col(1) = weights[1] * traj.col(6).abs(); //|dk|
 		cost_matrix.col(2) = weights[2] * traj.col(7)*traj.col(7); // v^2
@@ -106,7 +106,7 @@ namespace trajectory {
 		{
 			ArrayXXd sl(N, 2);
 			road->traj2sl(traj, sl);
-			cost_matrix.col(5) = weights[5] * sl.col(1); // road
+			cost_matrix.col(5) = weights[5] * (sl.col(1)-road->target_lane_center_line_offset).abs(); // road !!!! target_lane
 		}
 		else
 		{
@@ -128,16 +128,17 @@ namespace trajectory {
 		cost = cost_matrix.rowwise().sum();
 		//
 		// check kinematics limits
-		ArrayXXd flag(N, 4);
+		ArrayXXd flag(N, 5);
 		flag.col(0) = (traj.col(5).abs() > k_limits[0]).cast<double>(); // k
 		flag.col(1) = (traj.col(6).abs() > k_limits[1]).cast<double>(); // dk
 		flag.col(2) = (traj.col(7) > k_limits[2] || traj.col(7) < k_limits[3]).cast<double>(); // v
-		flag.col(4) = (traj.col(8) > k_limits[4] || traj.col(8) < k_limits[5]).cast<double>(); //a
+		flag.col(3) = (traj.col(8) > k_limits[4] || traj.col(8) < k_limits[5]).cast<double>(); //a
+		flag.col(4) = (cost_matrix.col(4).abs() > weights[4] * k_limits[6]).cast<double>(); // a_c
 		ArrayXXd total_flag = flag.rowwise().sum();
 #pragma omp parallel for
 		for (int i = 0; i < N; i++)
 		{
-			if (total_flag(i, 0) > 0)
+			if (total_flag(i, 0) > 0.5)
 				cost(i, 0) = inf;
 		}
 		// truncate the trajectory. If the trajectory is in collision with obstacles or violate the kinematic limitations of vehicle, the feasible part of this trajectory will be half truncated.
@@ -149,20 +150,27 @@ namespace trajectory {
 			M += 1;
 		}
 		//
-		int Row = M / 2;
-		if (Row > 0)
+		if (M == N)
 		{
-			ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
-			traj.resize(Row, 9);
-			traj = tmp1;
+			return cost.sum()*(traj(1,1)-traj(0,1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1));
 		}
 		else
 		{
-			ArrayXXd tmp2 = traj.row(0);
-			traj.resize(1, 9);
-			traj = tmp2;
+			int Row = M / 2;
+			if (Row > 10)
+			{
+				ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
+				traj.resize(Row, 9);
+				traj = tmp1;
+				return cost.block(0, 0, Row, 1).sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0)))* (traj(Row - 1, 1) - traj(0, 1)) + weights[8] * (traj(Row - 1, 0) - traj(0, 0)) + weights[9] * (traj(Row - 1, 1) - traj(0, 1));
+			}
+			else
+			{
+				ArrayXXd tmp2 = traj.row(0);
+				traj.resize(1, 9);
+				traj = tmp2;
+				return 0.;
+			}
 		}
-		// return total_cost;
-		return cost.block(0, 0, Row, 1).sum();
 	}
 }

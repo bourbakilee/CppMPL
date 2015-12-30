@@ -25,10 +25,10 @@ void test_with_sqlite3()
 	//
 	VectorXd r(5);
 	VectorXd q0(4);
-	q0 << 20., 20., -pi/6, -0.01;
+	q0 << 10., 50., 0., 0.;
 	VectorXd q1(4);
 	// q1 << 100., 40., pi / 6, -0.01;
-	q1 << 70., 30., pi / 6, -0.01;
+	q1 << 20, 51, 0, 0;
 	spiral3::spiral3( r, q0, q1, db);
 	std::cout << r << '\n';
 	//
@@ -37,7 +37,7 @@ void test_with_sqlite3()
 	//std::cout << points;
 	//traj
 	double u[4];
-	double v0=7., a0=0.5, vg=12.;
+	double v0=5., a0=0.5, vg=6.;
 	trajectory::velocity(u, v0, a0, vg, r[4]);
 	std::cout << u[0] << std::endl << u[1] << std::endl << u[2] << std::endl << u[3] << std::endl;
 	double r1[] = { r[0],r[1],r[2],r[3],r[4] };

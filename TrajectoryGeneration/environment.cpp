@@ -301,7 +301,7 @@ namespace environment{
 #pragma omp parallel for
 			for (int i = 0; i < N; i++)
 			{
-					int t_index = (int)std::floor(traj(i, 0) / this->delta_t);
+					// int t_index = (int)std::floor(traj(i, 0) / this->delta_t);
 					cost(i, 0) = 1.5*this->data[0](cover_indexes(i, 1), cover_indexes(i, 0))
 							+ this->data[0](cover_indexes(i, 3), cover_indexes(i, 2))
 							+ 0.5*this->data[0](cover_indexes(i, 5), cover_indexes(i, 4));
