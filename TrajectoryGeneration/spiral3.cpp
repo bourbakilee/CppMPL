@@ -113,6 +113,9 @@ void spiral3::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter_num,
 		// pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::min(std::abs(bd_con[3]), two_pi - std::abs(bd_con[3]));
 		pp[2] = std::sqrt(bd_con[1] * bd_con[1] + bd_con[2] * bd_con[2]) + 10. * std::abs(bd_con[3]);
 	}
+	pp[0] = std::max(std::min(pp[0], k_m), -k_m);
+	pp[1] = std::max(std::min(pp[1], k_m), -k_m);
+	pp[2] = std::max(std::min(pp[2], 1000.), 1.);
 	VectorXd q_g(3), q_p(3);
 	q_g << bd_con[1], bd_con[2], bd_con[3]; // x1,y1,theta1
 	// VectorXd p{ bd_con[0], pp[0], pp[1], bd_con[4], pp[2] };

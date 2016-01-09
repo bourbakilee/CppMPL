@@ -27,7 +27,7 @@ namespace trajectory {
 	// infinity, use isinf() function to determine if a number is infinity
 	const double inf = std::numeric_limits<double>::infinity();
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
-	const double cost_weights[] = { 10.,10.,1.,0.1,0.1,10.,0.1,0.1,10.,1. };
+	const double cost_weights[] = { 5., 10., 0.01, 10., 0.1, 0.1, 50., 5, 40., -3. };
 	//kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
 	const double kinematic_limits[] = { 0.2, 0.1, 20., 0., 2., -6., 10.};
 	// u: u0,u1,u2. tg
@@ -36,7 +36,7 @@ namespace trajectory {
 	void trajectory(ArrayXXd& traj, double r[], double u[], double ref_length=0., double ref_time=0.);
 
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
-	double eval_traj(ArrayXXd& traj, const double *weights= cost_weights, const double* k_limits=kinematic_limits , environment::Vehicle* vehicle= nullptr, environment::CostMap* cost_map=nullptr, environment::Road* road = nullptr);
+	double eval_traj(ArrayXXd& traj, const double *weights= cost_weights, const double* k_limits=kinematic_limits , environment::Vehicle* vehicle= nullptr, environment::CostMap* cost_map=nullptr, environment::Road* road = nullptr, bool truncate=true);
 
 }
 

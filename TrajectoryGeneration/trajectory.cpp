@@ -92,25 +92,25 @@ namespace trajectory {
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	// weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
-	double eval_traj(ArrayXXd& traj, const double *weights, const double* k_limits, environment::Vehicle* vehicle, environment::CostMap* cost_map, environment::Road* road)
+	double eval_traj(ArrayXXd& traj, const double *weights, const double* k_limits, environment::Vehicle* vehicle, environment::CostMap* cost_map, environment::Road* road, bool truncate)
 	{
 		int N = traj.rows();
 		ArrayXXd cost(N, 1);
 		ArrayXXd cost_matrix(N, 7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
 		cost_matrix.col(0) = weights[0] * traj.col(5).abs(); // |k|
 		cost_matrix.col(1) = weights[1] * traj.col(6).abs(); //|dk|
-		cost_matrix.col(2) = weights[2] * traj.col(7)*traj.col(7); // v^2
-		cost_matrix.col(3) = weights[3] * traj.col(8)*traj.col(8); // a^2
-		cost_matrix.col(4) = weights[4] / weights[2] * traj.col(5).abs()*cost_matrix.col(2); // v^2*k
+		cost_matrix.col(2) = weights[2] * traj.col(7).abs(); // |v|
+		cost_matrix.col(3) = weights[3] * traj.col(8).abs(); // |a|
+		cost_matrix.col(4) = weights[4] * traj.col(5).abs()*traj.col(7)*traj.col(7); // |v^2*k|
 		if (road != nullptr)
 		{
 			ArrayXXd sl(N, 2);
 			road->traj2sl(traj, sl);
-			cost_matrix.col(5) = weights[5] * (sl.col(1)-road->target_lane_center_line_offset).abs(); // road !!!! target_lane
+			cost_matrix.col(5) = weights[5] * (sl.col(1) - road->target_lane_center_line_offset).abs(); // road !!!! target_lane
 		}
 		else
 		{
-			cost_matrix.col(5) *= 0.;
+			cost_matrix.col(5).setZero();
 		}
 		if (cost_map != nullptr)
 		{
@@ -122,7 +122,7 @@ namespace trajectory {
 		}
 		else
 		{
-			cost_matrix.col(6) *= 0.;
+			cost_matrix.col(6).setZero();
 		}
 		// 
 		cost = cost_matrix.rowwise().sum();
@@ -143,34 +143,41 @@ namespace trajectory {
 		}
 		// truncate the trajectory. If the trajectory is in collision with obstacles or violate the kinematic limitations of vehicle, the feasible part of this trajectory will be half truncated.
 		// double total_cost = 0.;
-		int M = 0;
-		while (!std::isinf(cost(M, 0)) && M < N)
+		if (truncate)
 		{
-			// total_cost += cost(M, 0);
-			M += 1;
-		}
-		//
-		if (M == N)
-		{
-			return cost.sum()*(traj(1,1)-traj(0,1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1));
-		}
-		else
-		{
-			int Row = M / 2;
-			if (Row > 10)
+			int M = 0;
+			while (!std::isinf(cost(M, 0)) && M < N)
 			{
-				ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
-				traj.resize(Row, 9);
-				traj = tmp1;
-				return cost.block(0, 0, Row, 1).sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0)))* (traj(Row - 1, 1) - traj(0, 1)) + weights[8] * (traj(Row - 1, 0) - traj(0, 0)) + weights[9] * (traj(Row - 1, 1) - traj(0, 1));
+				// total_cost += cost(M, 0);
+				M += 1;
+			}
+			//
+			if (M == N)
+			{
+				return cost.sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1));
 			}
 			else
 			{
-				ArrayXXd tmp2 = traj.row(0);
-				traj.resize(1, 9);
-				traj = tmp2;
-				return 0.;
+				int Row = M / 2;
+				if (Row > 10)
+				{
+					ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
+					traj.resize(Row, 9);
+					traj = tmp1;
+					return cost.block(0, 0, Row, 1).sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0)))* (traj(Row - 1, 1) - traj(0, 1)) + weights[8] * (traj(Row - 1, 0) - traj(0, 0)) + weights[9] * (traj(Row - 1, 1) - traj(0, 1));
+				}
+				else
+				{
+					ArrayXXd tmp2 = traj.row(0);
+					traj.resize(1, 9);
+					traj = tmp2;
+					return 0.;
+				}
 			}
+		}
+		else
+		{
+			return cost.sum();
 		}
 	}
 }
