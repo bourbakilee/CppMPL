@@ -14,7 +14,7 @@ namespace environment{
 	// when rear_center_traj has only one row, it represent the state of vehicle
 	// cover_points - [(x1,y1,x2,y2,x3,y3)] - front, center, rear
 	// rear_center_traj - [(t,s,x,y,theta,....)]
-	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj)
+	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj) const
 	{
 		int N = rear_center_traj.rows();
 		if (cover_points.rows() != N)
@@ -237,7 +237,7 @@ namespace environment{
 		}
 	}
 
-	CostMap::CostMap(std::vector<ArrayXXd>& maps, double start_time, double end_time, double resolution): data(maps),start_time(start_time),end_time(end_time),resolution(resolution)
+	CostMap::CostMap(const std::vector<ArrayXXd>& maps, double start_time, double end_time, double resolution): data(maps),start_time(start_time),end_time(end_time),resolution(resolution)
 	{
 		if (this->data.size() == 1)
 		{
@@ -251,6 +251,7 @@ namespace environment{
 		}
 		this->cols = maps[0].cols();
 		this->rows = maps[0].rows();
+		this->num = maps.size();
 	}
 
 	/*
@@ -264,7 +265,7 @@ namespace environment{
 	// cover_points - [(x1,y1,x2,y2,x3,y3)]
 	// traj - [(t,s,x,y,theta....)]
 	// (x,y) <-> (col, row)
-	void CostMap::query(Vehicle* vehicle, ArrayXXd & traj, ArrayXXd& cost)
+	void CostMap::query(const Vehicle& vehicle, ArrayXXd & traj, ArrayXXd& cost) const
 	{
 		int N = traj.rows();
 		if (cost.rows() != N && cost.cols() < 1)
@@ -273,7 +274,7 @@ namespace environment{
 		}
 
 		ArrayXXd cover_points(N, 6);
-		vehicle->cover_centers(cover_points, traj);
+		vehicle.cover_centers(cover_points, traj);
 		// covert the global coordinates to index of costmap
 		Array<unsigned int, Dynamic, 6> cover_indexes = (cover_points / this->resolution).cast<unsigned int>();
 		if (this->isdynamic)

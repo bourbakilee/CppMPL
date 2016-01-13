@@ -33,7 +33,7 @@ namespace environment
 		// when rear_center_traj has only one row, it represent the state of vehicle
 		// cover_points - [(x1,y1,x2,y2,x3,y3)]
 		// rear_center_traj - [(t,s,x,y,theta....)]
-		void cover_centers(ArrayXXd& cover_points, ArrayXXd& rear_center_traj);
+		void cover_centers(ArrayXXd& cover_points, ArrayXXd& rear_center_traj) const;
 		// return coordinates of vertexes of vehicle body
 		// void vertexes(ArrayXXd& vertex_list, ArrayXXd& rear_center_traj)
 	};
@@ -91,18 +91,19 @@ namespace environment
 		double resolution;
 		unsigned int cols;
 		unsigned int rows;
+		unsigned int num;
 		std::vector<ArrayXXd> data; // vector<ArrayXXd> data
 		double delta_t;
 
 		// construct functions
 		CostMap() :isdynamic(false),start_time(0.), end_time(0.),resolution(0.2), cols(500), rows(500), data{ ArrayXXd::Ones(500, 500) }, delta_t(0.) {}
 		CostMap(ArrayXXd&map, double resolution = 0.2) :isdynamic(false), start_time(0.), end_time(0.), resolution(resolution), cols(map.cols()), rows(map.rows()), data{ map }, delta_t(0.) {}
-		CostMap(std::vector<ArrayXXd>& maps, double start_time = 0., double end_time = 0., double resolution = 0.2);
+		CostMap(const std::vector<ArrayXXd>& maps, double start_time = 0., double end_time = 0., double resolution = 0.2);
 
 		// member functions
 		// query the cost of a vehicle
 		// double query(Vehicle& vehicle);
-		void query(Vehicle* vehicle, ArrayXXd& traj, ArrayXXd& cost);
+		void query(const Vehicle& vehicle, ArrayXXd& traj, ArrayXXd& cost) const;
 	};
 
 

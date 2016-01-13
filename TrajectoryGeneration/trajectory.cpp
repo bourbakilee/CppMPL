@@ -92,11 +92,11 @@ namespace trajectory {
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	// weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
-	double eval_traj(ArrayXXd& traj, const double *weights, const double* k_limits, environment::Vehicle* vehicle, environment::CostMap* cost_map, environment::Road* road, bool truncate)
+	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, const double *weights, const double* k_limits, environment::Road* road, bool truncate)
 	{
 		int N = traj.rows();
-		ArrayXXd cost(N, 1);
-		ArrayXXd cost_matrix(N, 7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
+		ArrayXXd cost = ArrayXXd::Zero(N, 1);
+		ArrayXXd cost_matrix = ArrayXXd::Zero(N, 7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
 		cost_matrix.col(0) = weights[0] * traj.col(5).abs(); // |k|
 		cost_matrix.col(1) = weights[1] * traj.col(6).abs(); //|dk|
 		cost_matrix.col(2) = weights[2] * traj.col(7).abs(); // |v|
@@ -108,22 +108,22 @@ namespace trajectory {
 			road->traj2sl(traj, sl);
 			cost_matrix.col(5) = weights[5] * (sl.col(1) - road->target_lane_center_line_offset).abs(); // road !!!! target_lane
 		}
-		else
-		{
-			cost_matrix.col(5).setZero();
-		}
-		if (cost_map != nullptr)
-		{
-			if (vehicle == nullptr)
-				*vehicle = environment::Vehicle();
+		// else
+		// {
+		//	cost_matrix.col(5).setZero();
+		// }
+		// if (cost_map != nullptr)
+		// {
+		//	if (vehicle == nullptr)
+		//		*vehicle = environment::Vehicle();
 			// ArrayXXd cost(N, 1);
-			cost_map->query(vehicle, traj, cost);
-			cost_matrix.col(6) = weights[6] * cost; // environment
-		}
-		else
-		{
-			cost_matrix.col(6).setZero();
-		}
+		cost_map.query(vehicle, traj, cost);
+		cost_matrix.col(6) = weights[6] * cost; // environment
+		// }
+		// else
+		// {
+		//	cost_matrix.col(6).setZero();
+		// }
 		// 
 		cost = cost_matrix.rowwise().sum();
 		//
@@ -154,30 +154,30 @@ namespace trajectory {
 			//
 			if (M == N)
 			{
-				return cost.sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1));
+				return std::make_pair(cost.sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1)), false);
 			}
 			else
 			{
-				int Row = M / 2;
+				int Row = 2*M / 3;
 				if (Row > 10)
 				{
 					ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
 					traj.resize(Row, 9);
 					traj = tmp1;
-					return cost.block(0, 0, Row, 1).sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0)))* (traj(Row - 1, 1) - traj(0, 1)) + weights[8] * (traj(Row - 1, 0) - traj(0, 0)) + weights[9] * (traj(Row - 1, 1) - traj(0, 1));
+					return std::make_pair(cost.block(0, 0, Row, 1).sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0)))* (traj(Row - 1, 1) - traj(0, 1)) + weights[8] * (traj(Row - 1, 0) - traj(0, 0)) + weights[9] * (traj(Row - 1, 1) - traj(0, 1)), true);
 				}
 				else
 				{
 					ArrayXXd tmp2 = traj.row(0);
 					traj.resize(1, 9);
 					traj = tmp2;
-					return 0.;
+					return std::make_pair(inf, true);
 				}
 			}
 		}
 		else
 		{
-			return cost.sum();
+			return std::make_pair(cost.sum(), false);
 		}
 	}
 }
