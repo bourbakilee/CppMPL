@@ -194,7 +194,7 @@ namespace SearchGraph
 				{
 					if (connect(current, state, traj, db))  // successfully compute the trajectory from current to state
 					{
-						res = eval_traj(traj, veh, cost_map, weights, kinematic_limits, road, false);
+						res = eval_traj(traj, veh, cost_map, road, false, weights, kinematic_limits);
 						if (!std::isinf(res.first)) // successfully connect current to state
 						{
 							successor = state;
@@ -259,8 +259,66 @@ namespace SearchGraph
 #ifdef WITH_SQLITE3
 	bool connect(StatePtr s1, StatePtr s2, ArrayXXd & traj, sqlite3 * db)
 	{
-		return false;
+		bool res = false;
+		VectorXd r(5);
+		VectorXd q0(4);
+		q0 << s1->x, s1->y, s1->theta, s1->k;
+		VectorXd q1(4);
+		q1 << s2->x, s2->y, s2->theta, s2->k;
+		spiral3::spiral3(r, q0, q1, db);
+		if (r[4] > 0)
+		{
+			spiral3::path(traj, r, q0, q1);
+			double u[4];
+			trajectory::velocity(u, s1->v, s1->a, s2->v, r[4]);
+			if (u[3] > 0)
+			{
+				double r1[] = { r[0],r[1],r[2],r[3],r[4] };
+				trajectory::trajectory(traj, r1, u);
+				res = true;
+			}
+		}
+
+		return res;
 	}
 #endif
 
+
+	bool Astar(PQ& pq, StatePtr goal, State_Dict & state_dict, Traj_Dict & traj_dict, Road * road, const Vehicle & veh, CostMap & cost_map, HeuristicMap & hm, sqlite3 * db)
+	{
+		bool res = false;
+
+		StatePtr current;
+		VecSuccs vec_succ;
+		ArrayXXd traj = ArrayXXd::Zero(1, 9);
+		Eval_Res eval_res;
+
+		while (!goal->extend && !pq.empty())
+		{
+			current = pq.top();
+			pq.pop();
+			current->successors(vec_succ, state_dict, road, goal);
+			for (auto successor : vec_succ)
+			{
+				if (connect(current, successor, traj, db))
+				{
+					if (successor == goal)
+					{
+						eval_res = eval_traj(traj, veh, cost_map, road, false);
+					}
+					else
+					{
+						eval_res = eval_traj(traj, veh, cost_map, road, true);
+					}
+					if (!std::isinf(eval_res.first))
+					{
+						State::post_process(current, successor, eval_res, traj, pq, state_dict, traj_dict, goal, veh, road, cost_map, hm, db);
+					}
+				}
+			}
+		}
+
+		return goal->extend;
+	}
+	
 }

@@ -47,6 +47,8 @@ namespace SearchGraph
 	//
 	using PQ = std::priority_queue<StatePtr, std::vector<StatePtr>, StatePtrCompare>;
 
+	enum class MODE {OnRoadStatic, OnRoadDynamic, OffRoadStatic, OffRoadDynamic};
+
 
 	// heuristic map
 	struct HeuristicMap {
@@ -71,7 +73,7 @@ namespace SearchGraph
 	struct State
 	{
 		//members
-
+		// MODE mode;
 		// information about trajectory
 		double time;
 		int t_i;
@@ -122,17 +124,28 @@ namespace SearchGraph
 		// control set
 		void successors(VecSuccs& outs, State_Dict& state_dict, Road* road, StatePtr goal, const std::vector<double>& as = accerations, const std::vector<double>& vs = v_offsets, const std::vector<double>& ts = times, const double* p_lims = kinematic_limits);
 
+		// void successors(VecSuccs& outs, Time_State_Dict& state_dict, Road* road, StatePtr goal, const std::vector<double>& as = accerations, const std::vector<double>& vs = v_offsets, const std::vector<double>& ts = times, const double* p_lims = kinematic_limits) {}
+
+
 		// update cost, time, length and parent...
 		static bool update(StatePtr current, StatePtr parent, double cost, ArrayXXd& traj, Traj_Dict& traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t=0.1);
 
 		static double distance(StatePtr s1, StatePtr s2) { return std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
 
+		static double time_distance(StatePtr s1, StatePtr s2) { return std::abs(s1->time - s2->time) + std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
+
 		// static members
-		static void post_process(StatePtr current, StatePtr successor,Eval_Res& res, ArrayXXd& traj, 
+
+		// process after trajectory evaluation
+		static void post_process(StatePtr current, StatePtr successor, Eval_Res& res, ArrayXXd& traj, 
 			PQ& pq, State_Dict& state_dict, Traj_Dict& traj_dict, StatePtr goal, 
 			const Vehicle& veh, Road* road, const CostMap& cost_map, const HeuristicMap& hm, 
 			sqlite3* db, const double* weights = cost_weights);
 
+		// static void post_process(StatePtr current, StatePtr successor, Eval_Res& res, ArrayXXd& traj,
+		//	PQ& pq, Time_State_Dict& state_dict, Traj_Dict& traj_dict, StatePtr goal,
+		//	const Vehicle& veh, Road* road, const CostMap& cost_map, const HeuristicMap& hm,
+		//	sqlite3* db, const double* weights = cost_weights);
 
 		// non-member functions
 
@@ -154,15 +167,27 @@ namespace SearchGraph
 		}
 	};
 
+
 #ifdef WITH_SQLITE3
 	// compute trajectory connect s1 and s2. if s2 is not reachable, s2 will be modified identical to the end state of trajectory.
 	// if trajectory just not exists, return false
 	bool connect(StatePtr s1, StatePtr s2, ArrayXXd& traj, sqlite3* db);
 #endif
 
+	/*
+	Initialization:
+	StatePtr start = std::make_shared<State>(r_s1, r_l1, road, v1, a1, 0.,-);
+	StatePtr goal = std::make_shared<State>(r_s2, r_l2, road, v2, -, -,-);
+	State_Dict state_dict;
+	state_dict[ std::make_tuple(start.s_i, start.s_j, start.v_i) ] = start;
+	state_dict[ std::make_tuple(goal.s_i, goal.s_j, goal.v_i) ] = goal;
+	PQ pq;
+	pq.push(start);
+	Traj_Dict traj_dict;
+	*/
+	bool Astar(PQ& pq, StatePtr goal, State_Dict& state_dict, Traj_Dict& traj_dict, Road* road, const Vehicle& veh, CostMap& cost_map, HeuristicMap& hm, sqlite3* db);
 
-
-
+	// bool Astar(StatePtr start, StatePtr goal, Time_State_Dict& state_dict, Traj_Dict& traj_dict, Road* road, const Vehicle& veh, CostMap& cost_map, HeuristicMap& hm, sqlite3* db);
 
 }
 

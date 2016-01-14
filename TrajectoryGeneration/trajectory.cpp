@@ -92,7 +92,7 @@ namespace trajectory {
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	// weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	// kinematic_limits - { k_m, dk_m, v_max, v_min, a_max, a_min, ac_m }
-	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, const double *weights, const double* k_limits, environment::Road* road, bool truncate)
+	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, environment::Road* road, bool truncate, const double *weights, const double* k_limits)
 	{
 		int N = traj.rows();
 		ArrayXXd cost = ArrayXXd::Zero(N, 1);
@@ -159,7 +159,7 @@ namespace trajectory {
 			else
 			{
 				int Row = 2*M / 3;
-				if (Row > 10)
+				if (traj(Row-1,1) - traj(0,1) > 2.)
 				{
 					ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
 					traj.resize(Row, 9);
