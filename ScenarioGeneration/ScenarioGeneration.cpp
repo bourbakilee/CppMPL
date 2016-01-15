@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 using namespace Eigen;
@@ -20,6 +21,34 @@ void read_array(const char* filename, ArrayXXd& array)
 	}
 	//cout << array << endl;
 }
+
+void read_array(const char* filename, vector<vector<double>>& array)
+{
+	ifstream input(filename);
+	int i = 0;
+	double tmp;
+	vector<double> line(5,0.);
+	while (!(input >> tmp).fail()) {
+		i++;
+		line[i - 1] = tmp;
+		if (i % 5 == 0)
+		{
+			array.push_back(line);
+		}
+	}
+}
+
+void read_array(const char* filename, vector<double>& array)
+{
+	ifstream input(filename);
+	double tmp;
+	while (!(input >> tmp).fail()) {
+		
+			array.push_back(tmp);
+	}
+	ArrayXXd road_center_line(array.data());
+}
+
 
 int main()
 {

@@ -1,5 +1,6 @@
 #include "environment.h"
 #include <functional>
+#include <vector>
 
 namespace environment{
 
@@ -14,7 +15,7 @@ namespace environment{
 	// when rear_center_traj has only one row, it represent the state of vehicle
 	// cover_points - [(x1,y1,x2,y2,x3,y3)] - front, center, rear
 	// rear_center_traj - [(t,s,x,y,theta,....)]
-	void Vehicle::cover_centers(ArrayXXd & cover_points, ArrayXXd & rear_center_traj) const
+	void Vehicle::cover_centers(ArrayXXd & cover_points, const ArrayXXd & rear_center_traj) const
 	{
 		int N = rear_center_traj.rows();
 		if (cover_points.rows() != N)
@@ -39,8 +40,8 @@ namespace environment{
 		this->lane_num = lane_num;
 		this->current_lane = (lane_num - 1) / 2;
 		this->target_lane = this->current_lane;
-		this->current_lane_center_line_offset = (this->current_lane - this->lane_num + 0.5)*this->lane_width;
-		this->target_lane_center_line_offset = (this->target_lane - this->lane_num + 0.5)*this->lane_width;
+		this->current_lane_center_line_offset = (this->current_lane - this->lane_num / 2. + 0.5)*this->lane_width;
+		this->target_lane_center_line_offset = (this->target_lane - this->lane_num / 2. + 0.5)*this->lane_width;
 		this->length = center_line(center_line.rows()-1, 0);
 		this->lane_width = lane_width;
 		this->width = lane_width*lane_num;
@@ -220,7 +221,7 @@ namespace environment{
 
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
 	// sl - array of coordinates in SL frame
-	void Road::traj2sl(ArrayXXd & traj, ArrayXXd & sl)
+	void Road::traj2sl(const ArrayXXd & traj, ArrayXXd & sl)
 	{
 		int N = traj.rows();
 		if (sl.rows() != N && sl.cols()<2)
@@ -265,7 +266,7 @@ namespace environment{
 	// cover_points - [(x1,y1,x2,y2,x3,y3)]
 	// traj - [(t,s,x,y,theta....)]
 	// (x,y) <-> (col, row)
-	void CostMap::query(const Vehicle& vehicle, ArrayXXd & traj, ArrayXXd& cost) const
+	void CostMap::query(const Vehicle& vehicle, const ArrayXXd & traj, ArrayXXd& cost) const
 	{
 		int N = traj.rows();
 		if (cost.rows() != N && cost.cols() < 1)
@@ -306,6 +307,57 @@ namespace environment{
 					cost(i, 0) = 1.5*this->data[0](cover_indexes(i, 1), cover_indexes(i, 0))
 							+ this->data[0](cover_indexes(i, 3), cover_indexes(i, 2))
 							+ 0.5*this->data[0](cover_indexes(i, 5), cover_indexes(i, 4));
+			}
+		}
+	}
+
+
+	void read_map(const char* filename, ArrayXXd& map, const int rows, const int cols)
+	{
+		if (map.cols() != cols || map.rows() != rows)
+		{
+			map.resize(rows, cols);
+		}
+		std::ifstream input(filename);
+		for (int i = 0; i < rows * cols; i++)
+		{
+			// if input number is negative, it should be modified to inf
+			input >> map(i / cols, i % rows);
+		}
+
+		ArrayXXd flag = (map < 0.).cast<double>();
+#pragma omp parallel for
+		for (int i = 0; i < rows; i++)
+		{
+#pragma omp parallel for
+			for (int j = 0; j < cols; j++)
+			{
+				if (flag(i, j) > 0.5)
+				{
+					map(i, j) =  std::numeric_limits<double>::infinity();
+				}
+			}
+		}
+	}
+
+
+	void read_road_center_line(const char* filename, ArrayXXd& center_line)
+	{
+		std::vector<double> vec_tmp;
+		std::ifstream input(filename);
+		double tmp;
+		while (!(input >> tmp).fail()) 
+		{
+			vec_tmp.push_back(tmp);
+		}
+		center_line.resize(vec_tmp.size() / 5, 5);
+#pragma omp parallel for
+		for (int i = 0; i < center_line.rows(); i++)
+		{
+#pragma omp parallel for
+			for (int j = 0; j < center_line.cols(); j++)
+			{
+				center_line(i, j) = vec_tmp[i*center_line.cols() + j] < 0 ? std::numeric_limits<double>::infinity() : vec_tmp[i*center_line.cols() + j];
 			}
 		}
 	}

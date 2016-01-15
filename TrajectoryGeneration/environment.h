@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cmath>
+#include <fstream>
 // define EIGEN_USE_MKL_ALL
 #include <Eigen\Dense>
 
@@ -33,7 +34,7 @@ namespace environment
 		// when rear_center_traj has only one row, it represent the state of vehicle
 		// cover_points - [(x1,y1,x2,y2,x3,y3)]
 		// rear_center_traj - [(t,s,x,y,theta....)]
-		void cover_centers(ArrayXXd& cover_points, ArrayXXd& rear_center_traj) const;
+		void cover_centers(ArrayXXd& cover_points, const ArrayXXd& rear_center_traj) const;
 		// return coordinates of vertexes of vehicle body
 		// void vertexes(ArrayXXd& vertex_list, ArrayXXd& rear_center_traj)
 	};
@@ -65,7 +66,7 @@ namespace environment
 		// construct functions
 		Road():Road(ArrayXXd::Ones(1,5),1.5,0.5,3.5,3) {}
 		// the first column of road center_line array must be equidistantly
-		Road(const ArrayXXd& center_line, double ref_grid_length = 1.5, double ref_grid_width = 0.5, double lane_width = 3.5, unsigned int lane_num = 3);
+		Road(const ArrayXXd& center_line, double ref_grid_length = 1., double ref_grid_width = 0.5, double lane_width = 3.5, unsigned int lane_num = 3);
 
 		// member functions
 		void set_center_line(const ArrayXXd& line, double ref_grid_length=1.5);
@@ -78,7 +79,7 @@ namespace environment
 		void xy2sl(double sl[], double x, double y);
 		void xy2ij(unsigned int ij[], double x, double y);
 		// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
-		void traj2sl(ArrayXXd& traj, ArrayXXd& sl);
+		void traj2sl(const ArrayXXd& traj, ArrayXXd& sl);
 		// extend the road length
 		// void extend_road(const ArrayXXd& line);
 		// coid extend_road(const Road& road);
@@ -103,10 +104,12 @@ namespace environment
 		// member functions
 		// query the cost of a vehicle
 		// double query(Vehicle& vehicle);
-		void query(const Vehicle& vehicle, ArrayXXd& traj, ArrayXXd& cost) const;
+		void query(const Vehicle& vehicle, const ArrayXXd& traj, ArrayXXd& cost) const;
 	};
 
+	void read_map(const char* filename, ArrayXXd& map, int rows = 500, int cols = 500);
 
+	void read_road_center_line(const char* filename, ArrayXXd& center_line);
 
 }
 

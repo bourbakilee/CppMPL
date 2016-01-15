@@ -38,7 +38,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
@@ -73,6 +73,12 @@
     <IncludePath>D:\Dev\boost_1_60_0;D:\Dev\eigen3;D:\ProDocs\CppMPL\CppMPL\libsqlite3;$(IncludePath)</IncludePath>
     <TargetExt>.lib</TargetExt>
     <LibraryPath>D:\ProDocs\CppMPL\CppMPL\x64\Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <LibraryPath>D:\ProDocs\CppMPL\CppMPL\x64\Debug;$(LibraryPath)</LibraryPath>
+    <TargetExt>.lib</TargetExt>
+    <IncludePath>D:\Dev\eigen3;D:\Dev\boost_1_60_0;D:\ProDocs\CppMPL\CppMPL\libsqlite3;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

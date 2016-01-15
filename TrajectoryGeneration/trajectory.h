@@ -37,7 +37,7 @@ namespace trajectory {
 
 	//weights - (k, dk, v, a, a_c, offset, env, j, t, s)
 	using Eval_Res = std::pair<double, bool>;
-	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, const double *weights = cost_weights, const double* k_limits = kinematic_limits, environment::Road* road = nullptr, bool truncate=true);
+	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, environment::Road* road = nullptr, bool truncate = true, const double *weights = cost_weights, const double* k_limits = kinematic_limits);
 
 }
 

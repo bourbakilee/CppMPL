@@ -119,7 +119,7 @@ namespace SearchGraph
 	}
 
 	// the current state is successfully connected by traj from pareant state
-	bool State::update(StatePtr current, StatePtr parent, double cost, ArrayXXd & traj, Traj_Dict & traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t)
+	bool State::update(StatePtr current, StatePtr parent, double cost, const ArrayXXd & traj, Traj_Dict & traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t)
 	{
 		bool res = false;
 
@@ -140,10 +140,10 @@ namespace SearchGraph
 		    }
 			if (current->parent != nullptr)
 			{
-				traj_dict.erase(Traj_Index(current->parent, current));
+				traj_dict.erase(std::make_tuple(current->parent, current));
 			}
 			current->parent = parent;
-			traj_dict[Traj_Index(current->parent, current)] = ArrayXXd(traj);
+			traj_dict[std::make_tuple(current->parent, current)] = ArrayXXd(traj);
 			current->cost = c;
 			current->heuristic = hm.query(current, veh, goal);
 			current->priority = current->cost + current->heuristic;

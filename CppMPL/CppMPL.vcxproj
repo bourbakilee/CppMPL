@@ -70,6 +70,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>D:\ProDocs\CppMPL\CppMPL\TrajectoryGeneration;D:\ProDocs\CppMPL\CppMPL\libsqlite3;D:\Dev\eigen3;D:\Dev\boost_1_60_0;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\ProDocs\CppMPL\CppMPL\x64\Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>D:\Dev\eigen3;D:\Dev\boost_1_60_0;D:\ProDocs\CppMPL\CppMPL\TrajectoryGeneration;D:\ProDocs\CppMPL\CppMPL\libsqlite3;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\ProDocs\CppMPL\CppMPL\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -84,6 +89,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>libsqlite3.lib;TrajectoryGeneration.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -109,12 +117,14 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>TrajectoryGeneration.lib;libsqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="SearchGraph.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="SearchGraph.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

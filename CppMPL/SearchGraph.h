@@ -10,11 +10,30 @@ On Road State Lattice Builder
 
 #include <Eigen/Dense>
 #include <TrajectoryGeneration.h>
+
 #include <cmath>
 #include <tuple>
 #include <unordered_map>
 #include <queue>
 #include <memory>
+
+#include <boost/functional/hash.hpp>
+
+
+namespace std
+{
+	
+	// hash function for tuple
+	template<typename... T>
+	struct hash<tuple<T...>>
+	{
+		size_t operator()(tuple<T...> const& arg) const noexcept
+		{
+			return boost::hash_value(arg);
+		}
+	};
+
+}
 
 namespace SearchGraph
 {
@@ -29,6 +48,44 @@ namespace SearchGraph
 	// const std::vector<double> weights{ 5., 10., -0.1, 10., 0.1, 0.1, 50., 5, 40., -4. };
 
 	struct State;
+	struct StatePtrCompare;
+
+
+	/*
+	struct MyHash {
+	size_t operator()(const Sstruct& x) const { return std::hash<int>()(x.Iv); }
+    };
+
+	std::unordered_map<Sstruct,ValueType,MyHash>
+	*/
+
+	/*
+namespace std {
+  template <>
+  struct hash<Key>
+  {
+    std::size_t operator()(const Key& k) const
+    {
+      using std::size_t;
+      using std::hash;
+      using std::string;
+
+      // Compute individual hash values for first,
+      // second and third and combine them using XOR
+      // and bit shifting:
+
+      return ((hash<string>()(k.first)
+               ^ (hash<string>()(k.second) << 1)) >> 1)
+               ^ (hash<int>()(k.third) << 1);
+    }
+  };
+
+}
+	*/
+
+
+
+
 	using StatePtr = std::shared_ptr<State>;
 	using State_Index = std::tuple<int, int, int>;
 	// State_Dict: {(r_i,r_j,v_i): State}
@@ -38,7 +95,7 @@ namespace SearchGraph
 	// Time_State_Dict: {(t_i,r_i,r_j,v_i): State}
 	using Time_State_Dict = std::unordered_map<Time_State_Index, StatePtr>;
 
-	using Traj_Index = std::pair<StatePtr, StatePtr>;
+	using Traj_Index = std::tuple<StatePtr, StatePtr>;
 	// Traj_Dict: {(State, State): Traj}
 	using Traj_Dict = std::unordered_map<Traj_Index, ArrayXXd>;
 
@@ -108,7 +165,7 @@ namespace SearchGraph
 		// use the state at the end of trajectory to construct new state
 
 		// uesd to construct initial state, on-road only
-		State(double r_s, double r_l, Road* road, double velocity, double acc, double cost = inf, double dk = 0.);
+		State(double r_s, double r_l, Road* road, double velocity, double acc=0., double cost = inf, double dk = 0.);
 
 		State(int r_i, int r_j, Road* road, double velocity, double acc, double cost = inf, double dk = 0.) :
 			State(r_i*road->grid_length, r_j*road->grid_width, road, velocity, acc, cost, dk) {}
@@ -116,7 +173,7 @@ namespace SearchGraph
 		State(double x, double y, double theta, double k, Road* road, double velocity, double acc, double cost = inf, double dk = 0.);
 
 		// end state of traj
-		State(ArrayXXd& traj, Road* road) :State(traj(traj.rows() - 1, 2), traj(traj.rows() - 1, 3), traj(traj.rows() - 1, 4), traj(traj.rows() - 1, 5), road, traj(traj.rows() - 1, 7), traj(traj.rows() - 1, 8)) {}
+		State(const ArrayXXd& traj, Road* road) :State(traj(traj.rows() - 1, 2), traj(traj.rows() - 1, 3), traj(traj.rows() - 1, 4), traj(traj.rows() - 1, 5), road, traj(traj.rows() - 1, 7), traj(traj.rows() - 1, 8)) {}
 
 		// member functions
 
@@ -128,11 +185,11 @@ namespace SearchGraph
 
 
 		// update cost, time, length and parent...
-		static bool update(StatePtr current, StatePtr parent, double cost, ArrayXXd& traj, Traj_Dict& traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t=0.1);
+		static bool update(StatePtr current, StatePtr parent, double cost, const ArrayXXd& traj, Traj_Dict& traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t=0.1);
 
-		static double distance(StatePtr s1, StatePtr s2) { return std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
+		static double distance(const StatePtr& s1, const StatePtr& s2) { return std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
 
-		static double time_distance(StatePtr s1, StatePtr s2) { return std::abs(s1->time - s2->time) + std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
+		static double time_distance(const StatePtr& s1, const StatePtr& s2) { return std::abs(s1->time - s2->time) + std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
 
 		// static members
 
