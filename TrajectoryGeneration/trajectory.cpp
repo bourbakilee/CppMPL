@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "trajectory.h"
+// #include <iostream>
 
 namespace trajectory {
 	// u: u0,u1,u2. tg
@@ -22,23 +23,30 @@ namespace trajectory {
 		*/
 		u[0] = v0;
 		u[1] = a0;
-		double delta = (2 * v0 + vg)*(2 * v0 + vg) + 6 * a0*sg;
-		if (delta > eps2)
+		u[2] = u[3] = -1.;
+		double v_tmp = 2 * v0 + vg;
+		double a0_abs = std::abs(a0);
+		double delta = v_tmp*v_tmp + 6 * a0*sg;
+		double delta_abs = std::abs(delta);
+		if (delta > eps1)
 		{
-			if (std::abs(a0) < eps2)
-				u[3] = 3 * sg / (2 * v0 + vg);
-			else
-				u[3] = (std::sqrt(delta) - 2 * v0 - vg) / a0;
+			if (a0_abs > eps1)
+			{
+				u[3] = (std::sqrt(delta) - v_tmp) / a0;
+			}
+			else if (a0_abs <= eps1 && v_tmp > eps1)
+			{
+				u[3] = 3 * sg / v_tmp;
+			}
 		}
-		else if (std::abs(delta) < eps2)
+		else if (delta_abs < eps1 && a0_abs > eps1)
 		{
 			u[3] = (-2 * v0 - vg) / a0;
 		}
-		else
+		if (u[3] > 0.)
 		{
-			u[3] = -1.;
+			u[2] = (vg - v0 - a0*u[3]) / (u[3] * u[3]);
 		}
-		u[2] = (vg - v0 - a0*u[3]) / (u[3] * u[3]);
 	}
 
 	
@@ -61,7 +69,7 @@ namespace trajectory {
 		int j = 1;
 		for (int i = 1; i < N-1; i++)
 		{
-			while(traj(i, 1) >= lengths(j, 0))
+			while(traj(i, 1) >= lengths(j, 0) && j < N - 1)
 				j++;
 			traj(i, 0) = times(j - 1, 0) + (traj(i, 1) - lengths(j - 1, 0))*(times(j, 0) - times(j - 1, 0)) / (lengths(j, 0) - lengths(j - 1, 0));
 		}
@@ -71,22 +79,13 @@ namespace trajectory {
 		traj.col(6) = traj.col(7)*(r[1] + traj.col(1)*(2 * r[2] + 3 * r[3] * traj.col(1)));
 		// 8 col: a
 		traj.col(8) = u[1] + 2 * u[2] * traj.col(0);
-		/*
-		// 9 col: j
-		//traj.col(9) = 2 * u[2]*ArrayXXd::Ones(N,1);
-	    // 10 col: al
-		//traj.col(10) = traj.col(7)*traj.col(7)*traj.col(5);
-		*/
+
 		// ref_time -> absolute time
 		traj.col(0) += ref_time;
 		// ref_length -> absolute length
 		traj.col(1) += ref_length;
 	}
 
-	// Eigen3 <-> OpenCV
-	// I wouldn't necessarily recommend to use cv2eigen() and eigen2cv() though
-	// use Eigen::Map to just map the memory (no cost in copying anything) and cv::Mat(void*, ...) to map the data back
-	// MatrixXd matrix; double* arrayd = matrix.data();
 
 
 	// traj - array of points on trajectory - [(t,s,x,y,theta,k,dk,v,a)]
@@ -95,17 +94,29 @@ namespace trajectory {
 	Eval_Res eval_traj(ArrayXXd& traj, const environment::Vehicle& vehicle, const environment::CostMap& cost_map, environment::Road* road, bool truncate, const double *weights, const double* k_limits)
 	{
 		int N = traj.rows();
+
+		// std::cout << "Original Rows of Trajectory Array:" << N << std::endl;
+
 		ArrayXXd cost = ArrayXXd::Zero(N, 1);
 		ArrayXXd cost_matrix = ArrayXXd::Zero(N, 7); // k, dk, v, a, a_c, off_set(x,y), env(t,x,y,theta)
 		cost_matrix.col(0) = weights[0] * traj.col(5).abs(); // |k|
+
+		// std::cout << "Cost of Curvature:\n";
+		// std::cout << cost_matrix.col(0) << std::endl;
+
 		cost_matrix.col(1) = weights[1] * traj.col(6).abs(); //|dk|
 		cost_matrix.col(2) = weights[2] * traj.col(7).abs(); // |v|
 		cost_matrix.col(3) = weights[3] * traj.col(8).abs(); // |a|
 		cost_matrix.col(4) = weights[4] * traj.col(5).abs()*traj.col(7)*traj.col(7); // |v^2*k|
 		if (road != nullptr)
 		{
-			ArrayXXd sl(N, 2);
+			ArrayXXd sl = ArrayXXd::Zero(N, 2);
+			// std::cout << "Compute Road Cost:\n";
 			road->traj2sl(traj, sl);
+
+			//  std::cout << "S, L coordinates of trajectory:\n";
+			//  std::cout << sl << std::endl;
+
 			cost_matrix.col(5) = weights[5] * (sl.col(1) - road->target_lane_center_line_offset).abs(); // road !!!! target_lane
 		}
 		// else
@@ -118,6 +129,9 @@ namespace trajectory {
 		//		*vehicle = environment::Vehicle();
 			// ArrayXXd cost(N, 1);
 		cost_map.query(vehicle, traj, cost);
+
+		// std::cout << cost << std::endl;
+
 		cost_matrix.col(6) = weights[6] * cost; // environment
 		// }
 		// else
@@ -146,11 +160,20 @@ namespace trajectory {
 		if (truncate)
 		{
 			int M = 0;
-			while (!std::isinf(cost(M, 0)) && M < N)
+			for (int i = 0; i < N; i++)
+			{
+				if (!std::isinf(cost(i, 0)))
+					M++;
+				else
+					break;
+			}
+			/*
+			while (!std::isinf(cost(M - 1, 0)) && M < N)    // fix bug: out of index range
 			{
 				// total_cost += cost(M, 0);
 				M += 1;
 			}
+			*/
 			//
 			if (M == N)
 			{
@@ -159,7 +182,7 @@ namespace trajectory {
 			else
 			{
 				int Row = 2*M / 3;
-				if (traj(Row-1,1) - traj(0,1) > 2.)
+				if (Row > 2 && traj(Row-1,1) - traj(0,1) > 2.)
 				{
 					ArrayXXd tmp1 = traj.block(0, 0, Row, 9);
 					traj.resize(Row, 9);
@@ -168,16 +191,18 @@ namespace trajectory {
 				}
 				else
 				{
+
 					ArrayXXd tmp2 = traj.row(0);
 					traj.resize(1, 9);
 					traj = tmp2;
+
 					return std::make_pair(inf, true);
 				}
 			}
 		}
 		else
 		{
-			return std::make_pair(cost.sum(), false);
+			return std::make_pair(cost.sum()*(traj(1, 1) - traj(0, 1)) + weights[7] * std::abs((traj(1, 8) - traj(0, 8)) / (traj(1, 0) - traj(0, 0))) * (traj(N - 1, 1) - traj(0, 1)) + weights[8] * (traj(N - 1, 0) - traj(0, 0)) + weights[9] * (traj(N - 1, 1) - traj(0, 1)), false);
 		}
 	}
 }

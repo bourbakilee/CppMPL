@@ -2,6 +2,8 @@
 #include <functional>
 #include <vector>
 
+#include <iostream>
+
 namespace environment{
 
 	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
@@ -42,7 +44,7 @@ namespace environment{
 		this->target_lane = this->current_lane;
 		this->current_lane_center_line_offset = (this->current_lane - this->lane_num / 2. + 0.5)*this->lane_width;
 		this->target_lane_center_line_offset = (this->target_lane - this->lane_num / 2. + 0.5)*this->lane_width;
-		this->length = center_line(center_line.rows()-1, 0);
+		this->length = center_line(center_line.rows() -1, 0);
 		this->lane_width = lane_width;
 		this->width = lane_width*lane_num;
 
@@ -82,7 +84,7 @@ namespace environment{
 
 	void Road::set_current_lane(unsigned int i)
 	{
-		if (0 <= i < this->lane_num)
+		if (0 <= i && i < this->lane_num)
 		{
 			this->current_lane = i;
 			this->current_lane_center_line_offset = (this->current_lane - this->lane_num + 0.5)*this->lane_width;
@@ -110,7 +112,7 @@ namespace environment{
 
 	void Road::set_target_lane(unsigned int i)
 	{
-		if (0 <= i < this->lane_num)
+		if (0 <= i && i < this->lane_num)
 		{
 			this->target_lane = i;
 			this->target_lane_center_line_offset = (this->target_lane - this->lane_num + 0.5)*this->lane_width;
@@ -120,11 +122,11 @@ namespace environment{
 	// q - (x,y,\theta,k)
 	void Road::sl2xy(double q[], double s, double l)
 	{
-		if (0. <= s <= this->length)
+		if (0. <= s && s <= this->length)
 		{
 			// linear interpolate
 			// delta_s = center_line(1,0)
-			int i = std::floor(s / this->center_line(1, 0));
+			int i = std::min(std::max(std::floor(s / this->center_line(1, 0)), 0.), this->longitudinal_grid_num - 2.);
 			double delta1 = s - center_line(i, 0);
 			double delta2 = center_line(i + 1, 0) - s;
 			ArrayXXd station = (this->center_line.block(i, 1, 1, 4)*delta2 + this->center_line.block(i + 1, 1, 1, 4)*delta1) / this->center_line(1, 0);
@@ -134,7 +136,7 @@ namespace environment{
 			if (std::abs(station(0, 3)) < 1.e-8)
 				q[3] = 0.;
 			else
-			    q[3] = 1 / (1 / station(0,3) - l);
+			    q[3] = 1. / (1. / station(0,3) - l);
 		}
 		else 
 		{
@@ -144,7 +146,7 @@ namespace environment{
 
 	void Road::ij2xy(double q[], double i, double j)
 	{
-		if (0 <= i <= this->longitudinal_grid_num)
+		if (0 <= i && i <= this->longitudinal_grid_num)
 		{
 			this->sl2xy(q, i*this->grid_length, j*this->grid_width);
 		}
@@ -159,9 +161,9 @@ namespace environment{
 		std::function<double(double)> f = [this, x, y](double s) {
 			// linear interpolate
 			// delta_s = center_line(1,0)
-			int i = std::floor(s / this->center_line(1, 0));
-			double delta1 = s - center_line(i, 0);
-			double delta2 = center_line(i + 1, 0) - s;
+			int i = std::min(std::max(std::floor(s / this->center_line(1, 0)), 0.), this->longitudinal_grid_num-2.);
+			double delta1 = s - this->center_line(i, 0);
+			double delta2 = this->center_line(i + 1, 0) - s;
 			ArrayXXd station = (this->center_line.block(i, 1, 1, 3)*delta2 + this->center_line.block(i + 1, 1, 1, 3)*delta1) / this->center_line(1, 0);
 			return (x - station(0,0))*cos(station(0,2)) + (y - station(0,1))*sin(station(0,2));
 		};
@@ -186,9 +188,9 @@ namespace environment{
 		} while (std::abs(fs) > 1.e-3);
 		// linear interpolate
 		// delta_s = center_line(1,0)
-		int i = std::floor(sl[0] / this->center_line(1, 0));
-		double delta1 = sl[0] - center_line(i, 0);
-		double delta2 = center_line(i + 1, 0) - sl[0];
+		int i = std::min(std::max(std::floor(sl[0] / this->center_line(1, 0)), 0.), this->longitudinal_grid_num - 2.);
+		double delta1 = sl[0] - this->center_line(i, 0);
+		double delta2 = this->center_line(i + 1, 0) - sl[0];
 		ArrayXXd station = (this->center_line.block(i, 1, 1, 3)*delta2 + this->center_line.block(i + 1, 1, 1, 3)*delta1) / this->center_line(1, 0);
 		/*
 		if abs(tmp[2]) < 1.e-4:
@@ -199,11 +201,11 @@ namespace environment{
 		double sin_t = std::sin(station(0,2));
 		if (std::abs(sin_t) < 1.e-4)
 		{
-			sl[1] = (y - station(0,1)) / sin_t;
+			sl[1] = (y - station(0,1)) / cos(station(0, 2));
 		}
 		else
 		{
-			sl[1] = (station(0,0) - x) / cos(station(0,2));
+			sl[1] = (station(0,0) - x) / sin_t;
 		}
 	}
 
@@ -224,18 +226,29 @@ namespace environment{
 	void Road::traj2sl(const ArrayXXd & traj, ArrayXXd & sl)
 	{
 		int N = traj.rows();
-		if (sl.rows() != N && sl.cols()<2)
+		// std::cout << "traj2sl - Rows of traj: " << N << std::endl;
+		if (sl.rows() != N || sl.cols()<2)
 		{
 			sl.resize(N, 2);
 		}
+		// std::cout << "xy2sl - Size of SL array: " << sl.rows() << " " << sl.cols() << std::endl;
 		double tmp[] = { -1.,-1. };
 
 #pragma omp parallel for
 		for (int i = 0; i < N; i++)
 		{
-			this->xy2sl(tmp, traj(i, 2), traj(i, 3));
+
+			//  std::cout << "xy2sl - i: " << i << " of " << N << std::endl;
+			//  std::cout << "xy2sl - xy: " << traj(i, 2) << " " << traj(i, 3) << std::endl;
+
+			this->xy2sl(tmp, traj(i, 2), traj(i, 3)); 
 			sl.row(i) << tmp[0], tmp[1];
+			
+			// std::cout << "xy2sl - SL: " << sl.row(i) << std::endl;
+
 		}
+		// std::cout << "traj2sl - sl coordinates of traj: \n";
+		// std::cout << sl << std::endl;
 	}
 
 	CostMap::CostMap(const std::vector<ArrayXXd>& maps, double start_time, double end_time, double resolution): data(maps),start_time(start_time),end_time(end_time),resolution(resolution)
@@ -269,7 +282,7 @@ namespace environment{
 	void CostMap::query(const Vehicle& vehicle, const ArrayXXd & traj, ArrayXXd& cost) const
 	{
 		int N = traj.rows();
-		if (cost.rows() != N && cost.cols() < 1)
+		if (cost.rows() != N && cost.cols() != 1)
 		{
 			cost.resize(N, 1);
 		}
@@ -283,7 +296,7 @@ namespace environment{
 #pragma omp parallel for
 			for (int i = 0; i < N; i++)
 			{
-				if (this->start_time <= traj(i, 0) <= this->end_time)
+				if (this->start_time <= traj(i, 0) && traj(i, 0) <= this->end_time)
 				{
 					int t_index = (int)std::floor(traj(i, 0) / this->delta_t);
 					cost(i, 0) = (((t_index + 1)*this->delta_t - traj(i, 0))

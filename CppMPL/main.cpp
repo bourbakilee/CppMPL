@@ -28,8 +28,9 @@ int main()
 	ArrayXXd center_line;
 	read_road_center_line(center_line_file, center_line);
 	std::cout << "road center line: \n";
-	std::cout << center_line.row(0) << std::endl;
+	std::cout << "Rows of center line array: "<<center_line.rows() << std::endl;
 	Road road(center_line);
+	std::cout << "Road constructed: " << road.length << std::endl;
 
 	//     cost map
 	char* cost_map_file = "cost_map.txt";
@@ -52,10 +53,10 @@ int main()
 	std::cout << hm.data[0](499, 499) << std::endl;
 
 	// start, goal state
-	StatePtr start = std::make_shared<State>(5., 0., &road, 8.33, 0., 0.);
+	StatePtr start = std::make_shared<State>(5., 1., &road, 8., 0., 0.);
 	std::cout << "successfully construct start state:\n";
 	std::cout << start->x << start->y << start->theta << start->k << start->v << std::endl;
-	StatePtr goal = std::make_shared<State>(80., 0., &road, 8.33);
+	StatePtr goal = std::make_shared<State>(80., -1., &road, 9.);
 	std::cout << "successfully construct goal state:\n";
 	std::cout << goal->x << goal->y << goal->theta << goal->k << goal->v << std::endl;
 	State_Dict state_dict;
@@ -76,11 +77,17 @@ int main()
 	// bool res = Astar(pq, goal, state_dict, traj_dict, &road, veh, cm, hm, db);
 	bool res = connect(start, goal, traj, db);
 	std::cout <<"compute trajectory:"<< res << std::endl;
+	std::cout << "orignianl size of traj array: rows: " << traj.rows() << "  , cols: " << traj.cols() << std::endl;
+	// std::cout << "Planning Successfully? :" << res << std::endl;
+
 	if (res)
 	{
-		Eval_Res eval_res = eval_traj(traj, veh, cm, &road);
-		std::cout << eval_res.first << " " << eval_res.second << std::endl;
+		Eval_Res eval_res = eval_traj(traj, veh, cm, &road,true);
+		std::cout << "size of traj array after eval: rows: " << traj.rows() << "  , cols: " << traj.cols() << std::endl;
+		std::cout << "Cost: " << eval_res.first << std::endl;
+		std::cout << "Truncated:  " << eval_res.second << std::endl;
 	}
+
 
 	sqlite3_close(db);
 

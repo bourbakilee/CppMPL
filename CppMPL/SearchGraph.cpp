@@ -1,6 +1,8 @@
 #include "SearchGraph.h"
 #include <cmath>
 #include <exception>
+#include <iostream>
+#include <cassert>
 
 namespace SearchGraph
 {
@@ -10,7 +12,7 @@ namespace SearchGraph
 		this->time = 0.;
 		this->t_i = 0;
 		this->length = 0.;
-		
+
 		this->r_s = r_s;
 		this->r_l = r_l;
 		this->r_i = std::llround(r_s / road->grid_length);
@@ -73,7 +75,7 @@ namespace SearchGraph
 
 
 
-	void State::successors(VecSuccs & outs, State_Dict& state_dict, Road * road, StatePtr goal, const std::vector<double>& as, const std::vector<double>& vs, const std::vector<double>& ts, const double* p_lims)
+	void State::successors(VecSuccs & outs, State_Dict& state_dict, Road * road, StatePtr goal, const std::vector<double>& as, const std::vector<double>& vs, const std::vector<double>& ts, const double* p_lims) const
 	{
 		outs.clear();
 		if ((this->v + goal->v)*2.5 > goal->r_s - this->r_s)
@@ -81,13 +83,13 @@ namespace SearchGraph
 			outs.push_back(goal);
 		}
 #pragma omp parallel for
-		for (double n1 : as)
+		for (const double& n1 : as)
 		{
 #pragma omp parallel for
-			for (double n2 : vs)
+			for (const double& n2 : vs)
 			{
 #pragma omp parallel for
-				for (double n3 : ts)
+				for (const double& n3 : ts)
 				{
 					double v = std::min(std::max(this->v + n1*n3, p_lims[3]), p_lims[2]);
 					double l = this->r_l + n2*n3;
@@ -95,7 +97,7 @@ namespace SearchGraph
 					int r_i = std::llround(s / road->grid_length);
 					int r_j = std::llround(l / road->grid_width);
 					int v_i = std::llround(v / 2.);
-					
+
 					State_Index si = std::make_tuple(r_i, r_j, v_i);
 					StatePtr state = nullptr;
 					try
@@ -104,7 +106,7 @@ namespace SearchGraph
 					}
 					catch (const std::out_of_range& e)
 					{
-						if (this->r_i <= r_i <= goal->r_i && std::abs(r_j) * 2 < road->lateral_grid_num)
+						if ((this->r_i < r_i && r_i < goal->r_i) && (std::abs(r_j) * 2 < road->lateral_grid_num))
 						{
 							state = std::make_shared<State>(State(r_i, r_j, road, v_i*2., n1));
 						}
@@ -118,8 +120,12 @@ namespace SearchGraph
 		}
 	}
 
-	// the current state is successfully connected by traj from pareant state
-	bool State::update(StatePtr current, StatePtr parent, double cost, const ArrayXXd & traj, Traj_Dict & traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t)
+
+
+	// the current state is successfully connected by traj from pareant state.
+	// the time, length, parent, cost, heuristic, reach info of current state must be updated.
+	// the extend info of parent must be updated.
+	bool State::update(StatePtr successor, StatePtr parent, double cost, const ArrayXXd & traj, Traj_Dict & traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t)
 	{
 		bool res = false;
 
@@ -128,25 +134,26 @@ namespace SearchGraph
 			parent->extend = true;
 		}
 		double c = cost + parent->cost;
-		if (current->cost > c)
+		if (successor->cost > c)
 		{
 			int N = traj.rows() - 1;
-			current->time = traj(N, 0);
-			current->t_i = std::llround(traj(N, 0) / delta_t);
-			current->length = traj(N, 1);
-			if (!current->reach)
+            // assert(N>0);
+	        successor->time = traj(N, 0);
+			successor->t_i = std::llround(traj(N, 0) / delta_t);
+			successor->length = traj(N, 1);
+			if (!successor->reach)
 			{
-				current->reach = true;
-		    }
-			if (current->parent != nullptr)
+				successor->reach = true;
+		  }
+			if (successor->parent != nullptr)
 			{
-				traj_dict.erase(std::make_tuple(current->parent, current));
+				traj_dict.erase(std::make_tuple(successor->parent, successor));
 			}
-			current->parent = parent;
-			traj_dict[std::make_tuple(current->parent, current)] = ArrayXXd(traj);
-			current->cost = c;
-			current->heuristic = hm.query(current, veh, goal);
-			current->priority = current->cost + current->heuristic;
+			successor->parent = parent;
+			traj_dict[std::make_tuple(successor->parent, successor)] = ArrayXXd(traj);
+			successor->cost = c;
+			successor->heuristic = hm.query(successor, veh, goal);
+			successor->priority = successor->cost + successor->heuristic;
 			res = true;
 		}
 
@@ -186,7 +193,7 @@ namespace SearchGraph
 			else
 			{
 				StatePtr state = state_dict[si];
-				if (State::distance(successor, state) < 1.e-4)  // successor is close to state
+				if (State::distance(successor, state) < 1.e-3)  // successor is close to state
 				{
 					successor = state;
 				}
@@ -232,7 +239,7 @@ namespace SearchGraph
 
 		if (this->isdynamic)
 		{
-			if (this->start_time <= current->time <= this->end_time)
+			if (this->start_time <= current->time && current->time <= this->end_time)
 			{
 				int t_index = (int)std::floor(current->time / this->delta_t);
 				heuristic = (((t_index + 1)*this->delta_t - current->time)
@@ -274,7 +281,7 @@ namespace SearchGraph
 			if (u[3] > 0)
 			{
 				double r1[] = { r[0],r[1],r[2],r[3],r[4] };
-				trajectory::trajectory(traj, r1, u);
+				trajectory::trajectory(traj, r1, u, s1->length, s1->time);
 				res = true;
 			}
 		}
@@ -286,22 +293,37 @@ namespace SearchGraph
 
 	bool Astar(PQ& pq, StatePtr goal, State_Dict & state_dict, Traj_Dict & traj_dict, Road * road, const Vehicle & veh, CostMap & cost_map, HeuristicMap & hm, sqlite3 * db)
 	{
-		bool res = false;
+		// bool res = false;
 
 		StatePtr current;
 		VecSuccs vec_succ;
 		ArrayXXd traj = ArrayXXd::Zero(1, 9);
-		Eval_Res eval_res;
+		//  Eval_Res eval_res;
+
+		int i = 0;
 
 		while (!goal->extend && !pq.empty())
 		{
+			int j = 0;
 			current = pq.top();
+			std::cout << "Size of Priority Queue: " << pq.size() << std::endl;
+			i++;
+			std::cout << "Start of " << i << "th point. " << current->time<<"\t" << current->length << "\t" << current->x << "\t" << current->y << "\t" << current->theta << "\t" << current->k << "\t" << current->dk << "\t" << current->v << "\t" << current->a << std::endl;
+			std::cout << "SL: " << current->r_s << "\t" << current->r_l << std::endl;
+			std::cout << "IJ: " << current->r_i << "\t" << current->r_j << std::endl;
 			pq.pop();
 			current->successors(vec_succ, state_dict, road, goal);
+			current->extend = true;
 			for (auto successor : vec_succ)
 			{
+				j++;
+				// std::cout << j << "th successor: " << successor->time << "\t" << successor->length << "\t" << successor->x << "\t" << successor->y << "\t" << successor->theta << "\t" << successor->k << "\t" << successor->dk << "\t" << successor->v << "\t" << successor->a << std::endl;
+				// std::cout << "SL: " << successor->r_s << "\t" << successor->r_l << std::endl;
+				// std::cout << "IJ: " << successor->r_i << "\t" << successor->r_j << std::endl;
 				if (connect(current, successor, traj, db))
 				{
+					Eval_Res eval_res;
+					// std::cout << "Rows of traj: " << traj.rows() << std::endl;
 					if (successor == goal)
 					{
 						eval_res = eval_traj(traj, veh, cost_map, road, false);
@@ -310,14 +332,18 @@ namespace SearchGraph
 					{
 						eval_res = eval_traj(traj, veh, cost_map, road, true);
 					}
-					if (!std::isinf(eval_res.first))
+					if (!std::isinf(eval_res.first) && traj.rows() > 2)
 					{
 						State::post_process(current, successor, eval_res, traj, pq, state_dict, traj_dict, goal, veh, road, cost_map, hm, db);
 					}
 				}
+				//  std::cout << "End of " << j << "th trajectory. " << traj.row((traj.rows() - 1)) << std::endl;
 			}
+			// std::cout <<"End of "<< i << "th point. " << traj.row((traj.rows() - 1)) << std::endl;
 		}
-
+		//  std::cout << i << "th point. " << traj.row((traj.rows() - 1)) << std::endl;
+		std::cout << "Size of State Dict: " << state_dict.size() << std::endl;
+		std::cout << "Size of Trajectory Dict: " << traj_dict.size() << std::endl;
 		return goal->extend;
 	}
 	

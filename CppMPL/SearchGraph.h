@@ -22,7 +22,7 @@ On Road State Lattice Builder
 
 namespace std
 {
-	
+
 	// hash function for tuple
 	template<typename... T>
 	struct hash<tuple<T...>>
@@ -35,12 +35,13 @@ namespace std
 
 }
 
+
 namespace SearchGraph
 {
 	using namespace Eigen;
 	using namespace environment;
 	using namespace trajectory;
-	
+
 	//
 	const std::vector<double> accerations{ -4.,-2.,0.,2. };
 	const std::vector<double> v_offsets{ -1.,-0.5,0.,0.5,1. };
@@ -49,41 +50,6 @@ namespace SearchGraph
 
 	struct State;
 	struct StatePtrCompare;
-
-
-	/*
-	struct MyHash {
-	size_t operator()(const Sstruct& x) const { return std::hash<int>()(x.Iv); }
-    };
-
-	std::unordered_map<Sstruct,ValueType,MyHash>
-	*/
-
-	/*
-namespace std {
-  template <>
-  struct hash<Key>
-  {
-    std::size_t operator()(const Key& k) const
-    {
-      using std::size_t;
-      using std::hash;
-      using std::string;
-
-      // Compute individual hash values for first,
-      // second and third and combine them using XOR
-      // and bit shifting:
-
-      return ((hash<string>()(k.first)
-               ^ (hash<string>()(k.second) << 1)) >> 1)
-               ^ (hash<int>()(k.third) << 1);
-    }
-  };
-
-}
-	*/
-
-
 
 
 	using StatePtr = std::shared_ptr<State>;
@@ -179,13 +145,13 @@ namespace std {
 
 		// extend the current state
 		// control set
-		void successors(VecSuccs& outs, State_Dict& state_dict, Road* road, StatePtr goal, const std::vector<double>& as = accerations, const std::vector<double>& vs = v_offsets, const std::vector<double>& ts = times, const double* p_lims = kinematic_limits);
+		void successors(VecSuccs& outs, State_Dict& state_dict, Road* road, StatePtr goal, const std::vector<double>& as = accerations, const std::vector<double>& vs = v_offsets, const std::vector<double>& ts = times, const double* p_lims = kinematic_limits) const;
 
 		// void successors(VecSuccs& outs, Time_State_Dict& state_dict, Road* road, StatePtr goal, const std::vector<double>& as = accerations, const std::vector<double>& vs = v_offsets, const std::vector<double>& ts = times, const double* p_lims = kinematic_limits) {}
 
 
 		// update cost, time, length and parent...
-		static bool update(StatePtr current, StatePtr parent, double cost, const ArrayXXd& traj, Traj_Dict& traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t=0.1);
+		static bool update(StatePtr successor, StatePtr parent, double cost, const ArrayXXd& traj, Traj_Dict& traj_dict, const HeuristicMap& hm, StatePtr goal, const Vehicle& veh, double delta_t=0.1);
 
 		static double distance(const StatePtr& s1, const StatePtr& s2) { return std::abs(s1->x - s2->x) + std::abs(s1->y - s2->y) + std::abs(s1->theta - s2->theta) + std::abs(s1->k - s2->k); }
 
@@ -193,7 +159,7 @@ namespace std {
 
 		// static members
 
-		// process after trajectory evaluation
+		// process after trajectory evaluation, res.first is not infinity
 		static void post_process(StatePtr current, StatePtr successor, Eval_Res& res, ArrayXXd& traj, 
 			PQ& pq, State_Dict& state_dict, Traj_Dict& traj_dict, StatePtr goal, 
 			const Vehicle& veh, Road* road, const CostMap& cost_map, const HeuristicMap& hm, 
@@ -207,12 +173,10 @@ namespace std {
 		// non-member functions
 
 		// compare
-		
 		friend bool operator< (const State& s1, const State& s2)
 		{
 			return s1.priority < s2.priority;
 		}
-		
 	};
 
 
