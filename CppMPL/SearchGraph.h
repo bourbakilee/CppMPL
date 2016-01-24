@@ -86,6 +86,8 @@ namespace SearchGraph
 		double delta_t;
 
 		// constructor
+		HeuristicMap() :HeuristicMap(std::vector<ArrayXXd>{ArrayXXd::Zero(1, 9)}, CostMap()) {}
+		HeuristicMap(const HeuristicMap& hm);
 		HeuristicMap(const std::vector<ArrayXXd>& maps, CostMap& cost_map) :data(maps), isdynamic(cost_map.isdynamic), start_time(cost_map.start_time), end_time(cost_map.end_time), resolution(cost_map.resolution), cols(cost_map.cols), rows(cost_map.rows), delta_t(cost_map.delta_t), num(cost_map.num) {}
 
 		// query heuristic
@@ -209,6 +211,45 @@ namespace SearchGraph
 	bool Astar(PQ& pq, StatePtr goal, State_Dict& state_dict, Traj_Dict& traj_dict, Road* road, const Vehicle& veh, CostMap& cost_map, HeuristicMap& hm, sqlite3* db);
 
 	// bool Astar(StatePtr start, StatePtr goal, Time_State_Dict& state_dict, Traj_Dict& traj_dict, Road* road, const Vehicle& veh, CostMap& cost_map, HeuristicMap& hm, sqlite3* db);
+
+
+
+	class Simulation
+	{
+	public:
+		// initialized
+		MODE mode;
+		StatePtr start;
+		StatePtr goal;
+		Vehicle veh;
+		Road road;
+		CostMap cost_map;
+		HeuristicMap heuristic_map;
+		sqlite3* db;
+		// search
+		PQ pq;
+		State_Dict state_dict;
+		Traj_Dict traj_dict;
+		// results
+		bool res;
+		ArrayXXd traj;
+		// 
+		std::vector<StatePtr> state_list;
+		// std::vector<int> size_list;
+		std::vector<ArrayXXd*> traj_list;
+		//
+		Simulation() :Simulation(MODE::OnRoadStatic, "road_center_line.txt", "cost_map.txt", "heuristic_map.txt", "InitialGuessTable.db") {}
+		Simulation(MODE mode, const char* road, const char* costmap, const char* heuristicmap, const char* dbfile);
+
+		~Simulation();
+		//
+		bool set_boundary_conditions(double x1, double y1, double theta1, double k1, double x2, double y2, double theta2, double k2, double v1, double v2, double a1=0.);
+		bool set_boundary_conditions(double r_s1, double r_l1, double r_s2, double r_l2, double v1, double v2, double a1=0.);
+		bool set_boundary_conditions(int r_i1, int r_j1, int r_i2, int r_j2, int v_i1, int v_i2, double a1 = 0.);
+
+		bool run();
+		std::shared_ptr<ArrayXXd> interpolate(double time) const;
+	};
 
 }
 

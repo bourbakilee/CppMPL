@@ -28,6 +28,7 @@ namespace environment
 
 		// construct functions
 		Vehicle():Vehicle(2.94, 0.988,1.28,2.029) {}
+		Vehicle(const Vehicle& veh);
 		Vehicle(double wb, double fo, double ro, double wt);
 
 		// member functions
@@ -65,6 +66,7 @@ namespace environment
 		
 		// construct functions
 		Road():Road(ArrayXXd::Ones(1,5),1.5,0.5,3.5,3) {}
+		Road(const Road& road);
 		// the first column of road center_line array must be equidistantly
 		Road(const ArrayXXd& center_line, double ref_grid_length = 1., double ref_grid_width = 0.5, double lane_width = 3.5, unsigned int lane_num = 3);
 
@@ -98,6 +100,7 @@ namespace environment
 
 		// construct functions
 		CostMap() :isdynamic(false),start_time(0.), end_time(0.),resolution(0.2), cols(500), rows(500), data{ ArrayXXd::Ones(500, 500) }, delta_t(0.) {}
+		CostMap(const CostMap& cm);
 		CostMap(ArrayXXd&map, double resolution = 0.2) :isdynamic(false), start_time(0.), end_time(0.), resolution(resolution), cols(map.cols()), rows(map.rows()), data{ map }, delta_t(0.) {}
 		CostMap(const std::vector<ArrayXXd>& maps, double start_time = 0., double end_time = 0., double resolution = 0.2);
 

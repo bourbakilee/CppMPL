@@ -6,6 +6,19 @@
 
 namespace environment{
 
+	Vehicle::Vehicle(const Vehicle& veh)
+	{
+		this->cover_distance = veh.cover_distance;
+		this->cover_radius = veh.cover_radius;
+		this->front_offset = veh.front_offset;
+		this->geometric_center = veh.geometric_center;
+		this->length = veh.length;
+		this->rear_offset = veh.rear_offset;
+		this->wheel_base = veh.wheel_base;
+		this->width = veh.wheel_base;
+	}
+
+
 	Vehicle::Vehicle(double wb, double fo, double ro, double wt) : wheel_base(wb), front_offset(fo), rear_offset(ro), width(wt), length(wb + fo + ro)
 	{
 		this->cover_radius = std::sqrt(this->length*this->length / 9. + this->width*this->width)/2.;
@@ -34,6 +47,24 @@ namespace environment{
 		cover_points.col(5) = cover_points.col(3) - this->cover_distance*sin_t; // y3
 	}
 
+
+	Road::Road(const Road& road)
+	{
+		this->center_line = road.center_line;
+		this->current_lane = road.current_lane;
+		this->current_lane_center_line_offset = road.current_lane_center_line_offset;
+		this->grid_length = road.grid_length;
+		this->grid_width = road.grid_width;
+		this->lane_grid_num = road.lane_grid_num;
+		this->lane_num = road.lane_num;
+		this->lane_width = road.lane_width;
+		this->lateral_grid_num = road.lateral_grid_num;
+		this->length = road.length;
+		this->longitudinal_grid_num = road.longitudinal_grid_num;
+		this->target_lane = road.target_lane;
+		this->target_lane_center_line_offset = road.target_lane_center_line_offset;
+		this->width = road.width;
+	}
 
 	Road::Road(const ArrayXXd& center_line, double ref_grid_length, double ref_grid_width, double lane_width, unsigned int lane_num)
 	{
@@ -250,6 +281,22 @@ namespace environment{
 		// std::cout << "traj2sl - sl coordinates of traj: \n";
 		// std::cout << sl << std::endl;
 	}
+
+
+	CostMap::CostMap(const CostMap& cm)
+	{
+		this->cols = cm.cols;
+		this->data = cm.data;
+		this->delta_t = cm.delta_t;
+		this->end_time = cm.end_time;
+		this->isdynamic = cm.isdynamic;
+		this->num = cm.num;
+		this->resolution = cm.resolution;
+		this->rows = cm.rows;
+		this->start_time = cm.start_time;
+	}
+
+
 
 	CostMap::CostMap(const std::vector<ArrayXXd>& maps, double start_time, double end_time, double resolution): data(maps),start_time(start_time),end_time(end_time),resolution(resolution)
 	{

@@ -1,10 +1,13 @@
 #include "SearchGraph.h"
 #include <iostream>
+#include <chrono>
+#include <ctime>
 
 using namespace SearchGraph;
 
-int main()
+int test1()
 {
+	std::cout << "Start of Test 1 ......\n";
 	// open database
 	sqlite3* db = nullptr;
 	int rc = sqlite3_open("InitialGuessTable.db", &db);
@@ -78,11 +81,26 @@ int main()
 
 	ArrayXXd traj;
 	// search the graph
+
+	std::chrono::time_point<std::chrono::system_clock> start_time, end_time;
+	start_time = std::chrono::system_clock::now();
+
 	bool res = Astar(pq, goal, state_dict, traj_dict, &road, veh, cm, hm, db);
+
+	end_time = std::chrono::system_clock::now();
+	double elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()/1000.;
+	std::cout << "elapsed time: " << elapsed_time << "s\n";
+
 	// bool res = connect(start, goal, traj, db);
 	// std::cout << "compute trajectory:" << res << std::endl;
 	// std::cout << "orignianl size of traj array: rows: " << traj.rows() << "  , cols: " << traj.cols() << std::endl;
+	std::cout << "Size of State Dict: " << state_dict.size() << std::endl;
+	std::cout << "Size of Trajectory Dict: " << traj_dict.size() << std::endl;
+	std::cout << "Heuristic of Start State: " << hm.query(start,veh,goal) << std::endl;
+	std::cout << "Cost of Goal State: " << goal->cost << std::endl;
     std::cout << "Planning Successfully? :" << res << std::endl;
+	std::cout << "End Time: " << goal->time << std::endl;
+	std::cout << "End Length: " << goal->length << std::endl;
 
 	/*
 	if (res)
@@ -100,5 +118,25 @@ int main()
 
 	sqlite3_close(db);
 
+	std::cout << "End of Test 1 ......\n";
+
+	return 0;
+}
+
+int test2()
+{
+	std::cout << "\nStart of Test 2 ......\n";
+	Simulation sim = Simulation();
+	if(sim.set_boundary_conditions(5., 0., 80., 0., 8.33, 8.33, 0.))
+		sim.run();
+	std::cout << sim.traj << std::endl;
+	std::cout << "End of Test 2 ......\n";
+	return 0;
+}
+
+int main()
+{
+	test1();
+	test2();
 	return 0;
 }
