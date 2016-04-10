@@ -9,6 +9,7 @@
 #define WITH_SQLITE3
 #include <spiral3.h>
 #include <trajectory.h>
+#include <chrono>
 using namespace Eigen;
 void test_with_sqlite3()
 {
@@ -29,20 +30,35 @@ void test_with_sqlite3()
 	VectorXd q1(4);
 	// q1 << 100., 40., pi / 6, -0.01;
 	q1 << 20, 51, 0, 0;
+
+	double u[4];
+	double v0 = 5., a0 = 0.5, vg = 6.;
+
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
+
 	spiral3::spiral3( r, q0, q1, db);
-	std::cout << r << '\n';
+	
 	//
 	ArrayXXd points(10,9);
+
+
 	spiral3::path(points, r, q0, q1);
 	//std::cout << points;
 	//traj
-	double u[4];
-	double v0=5., a0=0.5, vg=6.;
+	
 	trajectory::velocity(u, v0, a0, vg, r[4]);
-	std::cout << u[0] << std::endl << u[1] << std::endl << u[2] << std::endl << u[3] << std::endl;
-	double r1[] = { r[0],r[1],r[2],r[3],r[4] };
+	
+	// double r1[] = { r[0],r[1],r[2],r[3],r[4] };
 	//ArrayXXd traj(10, 5);
-	trajectory::trajectory(points, r1, u);
+	trajectory::trajectory(points, r.data(), u);
+
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_s = end - start;
+	std::cout << "elapsed time: " << elapsed_s.count() << "s\n";
+
+	std::cout <<"r: \n"<< r << '\n';
+	std::cout << "u: \n"<<u[0] << std::endl << u[1] << std::endl << u[2] << std::endl << u[3] << std::endl;
 	std::cout << points;
 	//
 	sqlite3_close(db);
