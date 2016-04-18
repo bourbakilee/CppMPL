@@ -1,9 +1,9 @@
-#include "TrajectoryNN.h"
+#include "TrajectoryNN2.h"
 #include<iostream>
 #include <chrono>
 #include <random>
 using namespace std;
-using namespace TrajectoryNN;
+using namespace TrajectoryNN2;
 
 const double pi = 3.141592653589793;
 
@@ -40,7 +40,7 @@ int test_1()
 
 int test_2()
 {
-	InitialValueGuess_initialize();
+	InitialValueGuess2_initialize();
 	
 	int success = 0;
 	double r[5], u[4];
@@ -60,11 +60,11 @@ int test_2()
 					double state_g[5] = { x,y,theta,k,3. };
 					double q0[4] = { state_i[0], state_i[1], state_i[2], state_i[3] };
 					double q1[4] = { state_g[0], state_g[1], state_g[2], state_g[3] };
-					TrajectoryNN::spiral3(r, q0, q1);
+					TrajectoryNN2::spiral3(r, q0, q1);
 					if (r[4] > 0)
 					{
 						
-						TrajectoryNN::velocity(u, state_i[4], a_i, state_g[4], r[4]);
+						TrajectoryNN2::velocity(u, state_i[4], a_i, state_g[4], r[4]);
 						if (u[3] > 0)
 						{
 							success++;
@@ -81,13 +81,13 @@ int test_2()
 	std::cout << "Success: " << success << "\n";
 	std::cout << "Success Ratio: " << success / (5 * 7 * 13 * 9) << "\n";
 
-	InitialValueGuess_terminate();
+	InitialValueGuess2_terminate();
 	return 0;
 }
 
 int test_3()
 {
-	InitialValueGuess_initialize();
+	InitialValueGuess2_initialize();
 
 	int success = 0;
 	int path_success = 0;
@@ -95,8 +95,8 @@ int test_3()
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis_ki(-20, 20), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-500, 500), dis_tg(-90, 90), dis_kg(-20, 20), dis_vg(0, 800), dis_ai(-300, 150);
-	//std::uniform_int_distribution<> dis_ki(-5, 5), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-80, 80), dis_tg(-30, 30), dis_kg(-5, 5), dis_vg(0, 800), dis_ai(-300, 150);
+	//std::uniform_int_distribution<> dis_ki(-20, 20), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-500, 500), dis_tg(-90, 90), dis_kg(-20, 20), dis_vg(0, 800), dis_ai(-300, 150);
+	std::uniform_int_distribution<> dis_ki(-5, 5), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-80, 80), dis_tg(-30, 30), dis_kg(-5, 5), dis_vg(0, 800), dis_ai(-300, 150);
 
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -109,11 +109,11 @@ int test_3()
 		double a_i = dis_ai(gen) / 100.;
 		double v_g = dis_vg(gen) / 100.;
 
-		TrajectoryNN::spiral3(r, q0, q1);
+		TrajectoryNN2::spiral3(r, q0, q1);
 		if (r[4] > 0)
 		{
 			path_success++;
-			TrajectoryNN::velocity(u, v_i, a_i, v_g, r[4]);
+			TrajectoryNN2::velocity(u, v_i, a_i, v_g, r[4]);
 			if (u[3] > 0)
 			{
 				success++;
@@ -129,7 +129,7 @@ int test_3()
 	std::cout << "Path Success: " << path_success << "\n";
 	std::cout << "Path Success Ratio: " << path_success / 100000. << "\n";
 
-	InitialValueGuess_terminate();
+	InitialValueGuess2_terminate();
 	return 0;
 }
 

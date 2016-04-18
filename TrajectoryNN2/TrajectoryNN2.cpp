@@ -1,4 +1,4 @@
-#include "TrajectoryNN.h"
+#include "TrajectoryNN2.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -23,15 +23,15 @@ inline double mod2pi(double theta)
 }
 
 // thetas与ss大小一致
-inline void TrajectoryNN::__thetas(VectorXd& thetas, VectorXd& ss, VectorXd& r)
+inline void TrajectoryNN2::__thetas(VectorXd& thetas, VectorXd& ss, VectorXd& r)
 {
 	for (int i = 0; i < ss.rows(); i++)
 	{
-		thetas[i] = TrajectoryNN::__theta(ss[i], r);
+		thetas[i] = TrajectoryNN2::__theta(ss[i], r);
 	}
 }
 
-inline void TrajectoryNN::__xy(double& x, double& y, double s, VectorXd& r, double ref_size)
+inline void TrajectoryNN2::__xy(double& x, double& y, double s, VectorXd& r, double ref_size)
 {
 	if (s < 0) { s = r[4]; }
 	int N = (int)std::ceil(s / ref_size);
@@ -42,7 +42,7 @@ inline void TrajectoryNN::__xy(double& x, double& y, double s, VectorXd& r, doub
 	x = y = 0.;
 	for (int i = 0; i < N; i++) {
 		VectorXd ss = VectorXd::LinSpaced(9, s_list[i], s_list[i + 1]);
-		TrajectoryNN::__thetas(thetas, ss, r);
+		TrajectoryNN2::__thetas(thetas, ss, r);
 		fs = thetas.array().cos();
 		gs = thetas.array().sin();
 		x += h / 3 * (fs[0] + 2 * (fs[2] + fs[4] + fs[6]) + 4 * (fs[1] + fs[3] + fs[5] + fs[7]) + fs[8]);
@@ -51,10 +51,10 @@ inline void TrajectoryNN::__xy(double& x, double& y, double s, VectorXd& r, doub
 }
 
 
-void TrajectoryNN::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
+void TrajectoryNN2::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
 {
 	VectorXd ss = VectorXd::LinSpaced(9, 0., p[4]), thetas(9);
-	TrajectoryNN::__thetas(thetas, ss, r);
+	TrajectoryNN2::__thetas(thetas, ss, r);
 	VectorXd cos_t = thetas.array().cos();
 	VectorXd sin_t = thetas.array().sin();
 	VectorXd c_p_1(9);
@@ -82,7 +82,7 @@ void TrajectoryNN::__jacobian(Matrix3d& Jcb, VectorXd& p, VectorXd& r)
 
 // bd_con: boudary conditions [k0,x1,y1,theta1,k1]
 // pp: initial value of parameters [p1,p2,sg]
-void TrajectoryNN::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter_num, double k_m)
+void TrajectoryNN2::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter_num, double k_m)
 {
 	Matrix3d Jcb;
 	VectorXd pp(3);
@@ -102,7 +102,7 @@ void TrajectoryNN::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter
 	VectorXd q_g(3), q_p(3);
 	q_g << bd_con[1], bd_con[2], bd_con[3]; // x1,y1,theta1
 											// VectorXd p{ bd_con[0], pp[0], pp[1], bd_con[4], pp[2] };
-											// VectorXd r{ TrajectoryNN::__a(p),TrajectoryNN::__b(p), TrajectoryNN::__c(p), TrajectoryNN::__d(p), p[4] };
+											// VectorXd r{ TrajectoryNN2::__a(p),TrajectoryNN2::__b(p), TrajectoryNN2::__c(p), TrajectoryNN2::__d(p), p[4] };
 	VectorXd dq(3);
 	dq << 1., 1., 1.;
 	int times = 0;
@@ -110,9 +110,9 @@ void TrajectoryNN::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter
 	while ((std::abs(dq[0]) > eps1 || std::abs(dq[1]) > eps1 || std::abs(dq[2]) > eps2) && (times < iter_num)) {
 		times += 1;
 		//std::cout << "iteration times: " << times << std::endl;
-		TrajectoryNN::__jacobian(Jcb, p, r);
-		theta_p = TrajectoryNN::__theta(p[4], r);
-		TrajectoryNN::__xy(x_p, y_p, p[4], r);
+		TrajectoryNN2::__jacobian(Jcb, p, r);
+		theta_p = TrajectoryNN2::__theta(p[4], r);
+		TrajectoryNN2::__xy(x_p, y_p, p[4], r);
 		q_p << x_p, y_p, theta_p;
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		dq = q_g - q_p;
@@ -124,10 +124,10 @@ void TrajectoryNN::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter
 		//pp[1] = p[2] = sgn(pp[1])*std::min(k_m, std::abs(pp[1]));
 		pp[1] = p[2] = std::max(std::min(pp[1], k_m), -k_m);
 		pp[2] = r[4] = p[4] = std::max(std::min(pp[2], 1000.), 1.);
-		r[0] = TrajectoryNN::__a(p);
-		r[1] = TrajectoryNN::__b(p);
-		r[2] = TrajectoryNN::__c(p);
-		r[3] = TrajectoryNN::__d(p);
+		r[0] = TrajectoryNN2::__a(p);
+		r[1] = TrajectoryNN2::__b(p);
+		r[2] = TrajectoryNN2::__c(p);
+		r[3] = TrajectoryNN2::__d(p);
 	}
 	if(times == iter_num) //(std::abs(dq[0]) > eps1 || std::abs(dq[1]) > eps1 || std::abs(dq[2]) > eps2)
 	{
@@ -135,7 +135,7 @@ void TrajectoryNN::optimize(VectorXd& p, VectorXd& r, VectorXd& bd_con, int iter
 	}
 }
 
-void TrajectoryNN::spiral3(VectorXd & r, VectorXd & q0, VectorXd & q1, double k_m)
+void TrajectoryNN2::spiral3(VectorXd & r, VectorXd & q0, VectorXd & q1, double k_m)
 {
 	//bd_con
 	double cc = cos(q0[2]);
@@ -150,26 +150,26 @@ void TrajectoryNN::spiral3(VectorXd & r, VectorXd & q0, VectorXd & q1, double k_
 
 	//initilize p and r
 	double pp[3] = { 0.,0.,0. };
-	InitialValueGuess(bd_con.data(), pp);  // before spiral3 be called, InitialValueGuess_initialize() must be called; after InitialValueGuess_terminate();
+	InitialValueGuess2(bd_con.data(), pp);  // before spiral3 be called, InitialValueGuess_initialize() must be called; after InitialValueGuess_terminate();
 	VectorXd p(5);
 	p << q0[3], pp[0], pp[1], q1[3], pp[2];
-	r[0] = TrajectoryNN::__a(p);
-	r[1] = TrajectoryNN::__b(p);
-	r[2] = TrajectoryNN::__c(p);
-	r[3] = TrajectoryNN::__d(p);
+	r[0] = TrajectoryNN2::__a(p);
+	r[1] = TrajectoryNN2::__b(p);
+	r[2] = TrajectoryNN2::__c(p);
+	r[3] = TrajectoryNN2::__d(p);
 	r[4] = std::max(p[4], 0.);
 
 	// optimize
-	TrajectoryNN::optimize(p, r, bd_con);
+	TrajectoryNN2::optimize(p, r, bd_con);
 }
 
-void TrajectoryNN::spiral3(double r[], double q0[], double q1[], double k_m)
+void TrajectoryNN2::spiral3(double r[], double q0[], double q1[], double k_m)
 {
 	VectorXd rr(5), qs(4), qg(4);
 	//rr << r[0], r[1], r[2], r[3], r[4];
 	qs << q0[0], q0[1], q0[2], q0[3];
 	qg << q1[0], q1[1], q1[2], q1[3];
-	TrajectoryNN::spiral3(rr, qs, qg, k_m);
+	TrajectoryNN2::spiral3(rr, qs, qg, k_m);
 	r[0] = rr[0];
 	r[1] = rr[1];
 	r[2] = rr[2];
@@ -179,7 +179,7 @@ void TrajectoryNN::spiral3(double r[], double q0[], double q1[], double k_m)
 
 
 // points - {t, s, x, y, theta, k, dk, v, a}, here only 1-5 cols are used
-void TrajectoryNN::path(ArrayXXd& points, double r[], double q0[], double q1[], double length, double ref_size)
+void TrajectoryNN2::path(ArrayXXd& points, double r[], double q0[], double q1[], double length, double ref_size)
 {
 	if (length < 0) { length = r[4]; }
 	int N = (int)std::ceil(length / ref_size);
@@ -205,7 +205,7 @@ void TrajectoryNN::path(ArrayXXd& points, double r[], double q0[], double q1[], 
 	points(N, 5) = q1[3];
 }
 
-void TrajectoryNN::velocity(double u[], double v0, double a0, double vg, double sg)
+void TrajectoryNN2::velocity(double u[], double v0, double a0, double vg, double sg)
 {
 	u[0] = v0;
 	u[1] = a0;
@@ -240,7 +240,7 @@ void TrajectoryNN::velocity(double u[], double v0, double a0, double vg, double 
 // r: a, b, c, d, sg
 // u: u0,u1,u2. tg
 // parameter traj must be pre-computed by spiral3::path procedure, and colums 1-5 must be filled
-void TrajectoryNN::trajectory(ArrayXXd& traj, double r[], double u[], double ref_length, double ref_time)
+void TrajectoryNN2::trajectory(ArrayXXd& traj, double r[], double u[], double ref_length, double ref_time)
 {
 	int N = traj.rows();
 	// traj.resize(N, 11);
@@ -271,7 +271,7 @@ void TrajectoryNN::trajectory(ArrayXXd& traj, double r[], double u[], double ref
 	traj.col(1) += ref_length;
 }
 
-double TrajectoryNN::traj_eval(ArrayXXd & traj, double state_g[], const double weights[], const double limits[])
+double TrajectoryNN2::traj_eval(ArrayXXd & traj, double state_g[], const double weights[], const double limits[])
 {
 	int N = traj.rows();
 	ArrayXXd cost_matrix = ArrayXXd::Zero(N, 6); // (k, dk, v, a, a_c, offset)
@@ -303,26 +303,26 @@ double TrajectoryNN::traj_eval(ArrayXXd & traj, double state_g[], const double w
 
 
 
-TrajectoryNN::Traj::Traj(double state_i[], double state_g[], double a_i, const double weights[], const double limits[])
+TrajectoryNN2::Traj::Traj(double state_i[], double state_g[], double a_i, const double weights[], const double limits[])
 {
 	//
-	InitialValueGuess_initialize();
+	InitialValueGuess2_initialize();
 	//
 	// this->points.resize(1000, 9);
 	double q0[4] = { state_i[0], state_i[1], state_i[2], state_i[3] };
 	double q1[4] = { state_g[0], state_g[1], state_g[2], state_g[3] };
-	TrajectoryNN::spiral3(this->r, q0, q1);
+	TrajectoryNN2::spiral3(this->r, q0, q1);
 	// std::cout << this->r[4] << std::endl;
 
 	if (this->r[4] > 0)
 	{
-		TrajectoryNN::path(this->points, this->r, q0, q1);
+		TrajectoryNN2::path(this->points, this->r, q0, q1);
 
-		TrajectoryNN::velocity(this->u, state_i[4], a_i, state_g[4], this->r[4]);
+		TrajectoryNN2::velocity(this->u, state_i[4], a_i, state_g[4], this->r[4]);
 
-		TrajectoryNN::trajectory(this->points, this->r, this->u);
+		TrajectoryNN2::trajectory(this->points, this->r, this->u);
 
-		this->cost = TrajectoryNN::traj_eval(this->points, state_g, weights, limits);
+		this->cost = TrajectoryNN2::traj_eval(this->points, state_g, weights, limits);
 	}
 	else {
 		this->points.resize(1, 9);
@@ -330,12 +330,12 @@ TrajectoryNN::Traj::Traj(double state_i[], double state_g[], double a_i, const d
 	}
 }
 
-TrajectoryNN::Traj::~Traj()
+TrajectoryNN2::Traj::~Traj()
 {
-	InitialValueGuess_terminate();
+	InitialValueGuess2_terminate();
 }
 
-void TrajectoryNN::Traj::interp(double state[], double time)
+void TrajectoryNN2::Traj::interp(double state[], double time)
 {
 	int N = this->points.rows() - 1;
 	if (time<this->points(0, 0) || time > this->points(N, 0))
@@ -357,9 +357,9 @@ void TrajectoryNN::Traj::interp(double state[], double time)
 }
 
 
-TrajectoryNN::Traj TrajectoryNN::opt_traj(double state_i[], double state_g[], double a_i, const double weights[], const double limits[])
+TrajectoryNN2::Traj TrajectoryNN2::opt_traj(double state_i[], double state_g[], double a_i, const double weights[], const double limits[])
 {
-	using TrajPtr = std::shared_ptr<TrajectoryNN::Traj>;
+	using TrajPtr = std::shared_ptr<TrajectoryNN2::Traj>;
 	double cos_theta = std::cos(state_g[2]);
 	double sin_theta = std::sin(state_g[2]);
 	// double s_step, l_step;
@@ -376,7 +376,7 @@ TrajectoryNN::Traj TrajectoryNN::opt_traj(double state_i[], double state_g[], do
 			l_step = (j - 2)*0.3;
 			state_t[0] = state_g[0] + s_step*cos_theta + l_step*sin_theta;
 			state_t[1] = state_g[1] - s_step*sin_theta + l_step*cos_theta;
-			vec_traj.push_back(std::make_shared<TrajectoryNN::Traj>(state_i, state_t, a_i));
+			vec_traj.push_back(std::make_shared<TrajectoryNN2::Traj>(state_i, state_t, a_i));
 		}
 	}
 	*/
@@ -386,7 +386,7 @@ TrajectoryNN::Traj TrajectoryNN::opt_traj(double state_i[], double state_g[], do
 		{
 			state_t[0] = state_g[0] + s_step*cos_theta + l_step*sin_theta;
 			state_t[1] = state_g[1] - s_step*sin_theta + l_step*cos_theta;
-			vec_traj.push_back(std::make_shared<TrajectoryNN::Traj>(state_i, state_t, a_i, weights, limits));
+			vec_traj.push_back(std::make_shared<TrajectoryNN2::Traj>(state_i, state_t, a_i, weights, limits));
 		}
 	}
 	

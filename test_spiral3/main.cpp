@@ -2,6 +2,8 @@
 #define TEST_WITH_SQLITE3
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <random>
 // using namespace std;
 
 #ifdef TEST_WITH_SQLITE3
@@ -9,7 +11,7 @@
 #define WITH_SQLITE3
 #include <spiral3.h>
 #include <trajectory.h>
-#include <chrono>
+//#include <chrono>
 using namespace Eigen;
 void test_with_sqlite3()
 {
@@ -63,6 +65,64 @@ void test_with_sqlite3()
 	//
 	sqlite3_close(db);
 }
+
+
+void test_3()
+{
+	sqlite3* db = nullptr;
+	int rc = sqlite3_open("InitialGuessTable.db", &db);
+	if (rc) {
+		std::cout << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
+		sqlite3_close(db);
+		return;
+	}
+	else {
+		std::cout << "Opened database successfully" << std::endl;
+	}
+
+	int success = 0;
+	int path_success = 0;
+	double r[5], u[4];
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis_ki(-20, 20), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-500, 500), dis_tg(-90, 90), dis_kg(-20, 20), dis_vg(0, 800), dis_ai(-300, 150);
+	//std::uniform_int_distribution<> dis_ki(-10, 10), dis_vi(0, 800), dis_xg(10, 500), dis_yg(-100, 100), dis_tg(-45, 45), dis_kg(-10, 10), dis_vg(0, 800), dis_ai(-300, 150);
+
+
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
+	for (int i = 0; i < 100000; i++)
+	{
+		double q0[4] = { 0.,0.,0.,dis_ki(gen) / 100. };
+		double q1[4] = { dis_xg(gen) / 10., dis_yg(gen) / 10., dis_tg(gen) * pi / 180. };
+		double v_i = dis_vi(gen) / 100.;
+		double a_i = dis_ai(gen) / 100.;
+		double v_g = dis_vg(gen) / 100.;
+
+		spiral3::spiral3(r, q0, q1, db);
+		if (r[4] > 0)
+		{
+			path_success++;
+			trajectory::velocity(u, v_i, a_i, v_g, r[4]);
+			if (u[3] > 0)
+			{
+				success++;
+			}
+		}
+	}
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_s = end - start;
+	std::cout << "elapsed time: " << elapsed_s.count() << "s\n";
+	std::cout << "average time: " << elapsed_s.count() / 100000. << "s\n";
+	std::cout << "Success: " << success << "\n";
+	std::cout << "Success Ratio: " << success / 100000. << "\n";
+	std::cout << "Path Success: " << path_success << "\n";
+	std::cout << "Path Success Ratio: " << path_success / 100000. << "\n";
+
+	sqlite3_close(db);
+}
+
 #endif
 #endif
 
@@ -98,10 +158,15 @@ void test_no_sql()
 
 #endif
 
+
+
+
+
 int main()
 {
 #ifdef TEST_WITH_SQLITE3
-	test_with_sqlite3();
+	//test_with_sqlite3();
+	test_3();
 #endif
 
 #ifdef TEST_WITHOUT_SQLITE3

@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{46C6DAC6-4E25-42F3-B169-7238D29E924E}</ProjectGuid>
-    <RootNamespace>TrajectoryNN</RootNamespace>
+    <ProjectGuid>{B4BB9690-1659-45C9-814B-824FEC1BDDD2}</ProjectGuid>
+    <RootNamespace>TrajectoryNN2</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -113,25 +113,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="InitialValueGuess.cpp" />
-    <ClCompile Include="InitialValueGuess_initialize.cpp" />
-    <ClCompile Include="InitialValueGuess_terminate.cpp" />
+    <ClCompile Include="InitialValueGuess2.cpp" />
+    <ClCompile Include="InitialValueGuess2_initialize.cpp" />
+    <ClCompile Include="InitialValueGuess2_terminate.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rtGetInf.cpp" />
     <ClCompile Include="rtGetNaN.cpp" />
     <ClCompile Include="rt_nonfinite.cpp" />
-    <ClCompile Include="TrajectoryNN.cpp" />
+    <ClCompile Include="TrajectoryNN2.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="InitialValueGuess.h" />
-    <ClInclude Include="InitialValueGuess_initialize.h" />
-    <ClInclude Include="InitialValueGuess_terminate.h" />
-    <ClInclude Include="InitialValueGuess_types.h" />
+    <ClInclude Include="InitialValueGuess2.h" />
+    <ClInclude Include="InitialValueGuess2_initialize.h" />
+    <ClInclude Include="InitialValueGuess2_terminate.h" />
+    <ClInclude Include="InitialValueGuess2_types.h" />
     <ClInclude Include="rtGetInf.h" />
     <ClInclude Include="rtGetNaN.h" />
     <ClInclude Include="rtwtypes.h" />
     <ClInclude Include="rt_nonfinite.h" />
-    <ClInclude Include="TrajectoryNN.h" />
+    <ClInclude Include="TrajectoryNN2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

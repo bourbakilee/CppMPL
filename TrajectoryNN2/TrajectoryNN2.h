@@ -1,22 +1,22 @@
-#ifndef TRAJECTORY_NN_H
-#define TRAJECTORY_NN_H
+#ifndef TRAJECTORY_NN2_H
+#define TRAJECTORY_NN2_H
 
 #include <cmath>
 #include <stddef.h>
 #include <stdlib.h>
 #include "rtwtypes.h"
-#include "InitialValueGuess_types.h"
+#include "InitialValueGuess2_types.h"
 
 #include "rt_nonfinite.h"
-#include "InitialValueGuess.h"
-#include "InitialValueGuess_terminate.h"
-#include "InitialValueGuess_initialize.h"
+#include "InitialValueGuess2.h"
+#include "InitialValueGuess2_terminate.h"
+#include "InitialValueGuess2_initialize.h"
 
 #include <limits>
 #include <Eigen/Dense>
 using namespace Eigen;
 
-namespace TrajectoryNN
+namespace TrajectoryNN2
 {
 	inline double __a(VectorXd& p) { return p[0]; }
 	inline double __b(VectorXd& p) { return -(11 * p[0] - 18 * p[1] + 9 * p[2] - 2 * p[3]) / (2 * p[4]); }

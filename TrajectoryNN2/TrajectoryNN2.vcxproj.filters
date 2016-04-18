@@ -15,13 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="InitialValueGuess.cpp">
+    <ClCompile Include="InitialValueGuess2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="InitialValueGuess_initialize.cpp">
+    <ClCompile Include="InitialValueGuess2_initialize.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="InitialValueGuess_terminate.cpp">
+    <ClCompile Include="InitialValueGuess2_terminate.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="rt_nonfinite.cpp">
@@ -33,24 +36,21 @@
     <ClCompile Include="rtGetNaN.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TrajectoryNN.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="TrajectoryNN2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="InitialValueGuess.h">
+    <ClInclude Include="InitialValueGuess2.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="InitialValueGuess_initialize.h">
+    <ClInclude Include="InitialValueGuess2_initialize.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="InitialValueGuess_terminate.h">
+    <ClInclude Include="InitialValueGuess2_terminate.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="InitialValueGuess_types.h">
+    <ClInclude Include="InitialValueGuess2_types.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="rt_nonfinite.h">
@@ -65,7 +65,7 @@
     <ClInclude Include="rtwtypes.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TrajectoryNN.h">
+    <ClInclude Include="TrajectoryNN2.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
