@@ -44,7 +44,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -69,7 +69,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Dev\eigen3;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\eigen3;D:\Program Files\MATLAB\R2016a\simulink\include;D:\Program Files\MATLAB\R2016a\extern\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -116,7 +116,6 @@
     <ClCompile Include="InitialValueGuess2.cpp" />
     <ClCompile Include="InitialValueGuess2_initialize.cpp" />
     <ClCompile Include="InitialValueGuess2_terminate.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="rtGetInf.cpp" />
     <ClCompile Include="rtGetNaN.cpp" />
     <ClCompile Include="rt_nonfinite.cpp" />

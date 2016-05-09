@@ -57,7 +57,7 @@ static void mdlInitializeSizes(SimStruct *S)
 	ssSetNumSampleTimes(S, 1);
 	ssSetNumRWork(S, 0);
 	ssSetNumIWork(S, 0);
-	ssSetNumPWork(S, 0);
+	ssSetNumPWork(S, 1);
 	ssSetNumModes(S, 0);
 	ssSetNumNonsampledZCs(S, 0);
 

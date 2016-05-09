@@ -134,8 +134,21 @@ int test_3()
 }
 
 
+int test_4()
+{
+	Planner p = Planner();
+	double s1[] = {10.,10.,0.,0.,10.};
+	double g1[] = { 50.,20.,0.,0.,10. };
+	p.update(s1, g1);
+	std::cout << p.start_planning << std::endl;
+	std::cout << p.end_time << std::endl;
+	std::cout << p.r[0] << "\t" << p.r[1] << "\t" << p.r[2] << "\t" << p.r[3] << "\t" << p.r[4] << std::endl;
+	std::cout << p.u[0] << "\t" << p.u[1] << "\t" << p.u[2] << "\t" << p.u[3] << std::endl;
+	return 0;
+}
+
 int main()
 {
 	//test_1();
-	test_3();
+	test_4();
 }

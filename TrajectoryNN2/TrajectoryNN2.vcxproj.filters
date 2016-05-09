@@ -24,9 +24,6 @@
     <ClCompile Include="InitialValueGuess2_terminate.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="rt_nonfinite.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

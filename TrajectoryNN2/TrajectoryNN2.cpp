@@ -1,5 +1,6 @@
 #include "TrajectoryNN2.h"
 #include <algorithm>
+#include <cmath>
 #include <vector>
 #include <memory>
 // #include <iostream>
@@ -357,6 +358,8 @@ void TrajectoryNN2::Traj::interp(double state[], double time)
 }
 
 
+
+
 TrajectoryNN2::Traj TrajectoryNN2::opt_traj(double state_i[], double state_g[], double a_i, const double weights[], const double limits[])
 {
 	using TrajPtr = std::shared_ptr<TrajectoryNN2::Traj>;
@@ -393,4 +396,87 @@ TrajectoryNN2::Traj TrajectoryNN2::opt_traj(double state_i[], double state_g[], 
 
 	auto opt_traj_ptr_iter = std::min_element(std::begin(vec_traj), std::end(vec_traj), [](TrajPtr const & t1, TrajPtr const & t2) {return t1->cost < t2->cost; });
 	return **opt_traj_ptr_iter;
+}
+
+TrajectoryNN2::Planner::Planner()
+{
+	this->start_time = -1.;
+	this->end_time = -1.;
+
+	this->start_planning = false;
+	this->end_planning = true;
+
+	this->r[0] = this->r[1] = this->r[2] = this->r[3] = this->r[4] = -1.;
+	this->u[0] = this->u[1] = this->u[2] = this->u[3] = -1.;
+
+	this->start_state[0] = this->start_state[1] = this->start_state[2] = this->start_state[3] = this->start_state[4] = -1.;
+	this->goal_state[0] = this->goal_state[1] = this->goal_state[2] = this->goal_state[3] = this->goal_state[4] = -1.;
+
+	InitialValueGuess2_initialize();
+}
+
+TrajectoryNN2::Planner::~Planner()
+{
+	InitialValueGuess2_terminate();
+}
+
+void TrajectoryNN2::Planner::update(double state_i[], double state_g[], double start_time, double a_i, const double weights[], const double limits[])
+{
+	this->start_planning = true;
+	this->end_planning = false;
+	this->start_state[0] = state_i[0];
+	this->start_state[1] = state_i[1];
+	this->start_state[2] = state_i[2];
+	this->start_state[3] = state_i[3];
+	this->start_state[4] = state_i[4];
+	this->goal_state[0] = state_g[0];
+	this->goal_state[1] = state_g[1];
+	this->goal_state[2] = state_g[2];
+	this->goal_state[3] = state_g[3];
+	this->goal_state[4] = state_g[4];
+	TrajectoryNN2::spiral3(this->r, state_i, state_g);
+	if (this->r[4] > 0)
+	{
+		TrajectoryNN2::velocity(this->u, state_i[4], a_i, state_g[4], this->r[4]);
+		if (u[3] > 0)
+		{
+			this->start_time = start_time;
+			this->end_time = this->start_time + u[3];
+		}
+	}
+	else
+	{
+		this->start_planning = false;
+		this->end_planning = true;
+	}
+}
+
+void TrajectoryNN2::Planner::reset()
+{
+	this->start_time = -1.;
+	this->end_time = -1.;
+
+	this->start_planning = false;
+	this->end_planning = true;
+
+	this->r[0] = this->r[1] = this->r[2] = this->r[3] = this->r[4] = -1.;
+	this->u[0] = this->u[1] = this->u[2] = this->u[3] = -1.;
+
+	this->start_state[0] = this->start_state[1] = this->start_state[2] = this->start_state[3] = this->start_state[4] = -1.;
+	this->goal_state[0] = this->goal_state[1] = this->goal_state[2] = this->goal_state[3] = this->goal_state[4] = -1.;
+}
+
+void TrajectoryNN2::Planner::interp(double time, double state[])
+{
+	// state - [x,y,theta,k,v]
+	state[4] = this->u[0] + this->u[1] * time + this->u[2] * time*time; // v
+	double s = this->u[0] * time + this->u[1] * time*time / 2. + this->u[2] * time*time*time / 3.; // s
+	VectorXd rr(5);
+	rr << this->r[0], this->r[1], this->r[2], this->r[3], this->r[4];
+	state[3] = __k(s, rr); // k
+	state[2] = this->start_state[2] + __theta(s, rr); // theta
+	double x = -1., y = -1.;
+	__xy(x, y, s, rr);
+	state[0] = this->start_state[0] + x*cos(this->start_state[2]) - y*sin(this->start_state[2]);
+	state[1] = this->start_state[1] + x*sin(this->start_state[2]) + y*cos(this->start_state[2]);
 }

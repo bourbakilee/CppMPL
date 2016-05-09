@@ -57,10 +57,32 @@ namespace TrajectoryNN2
 		double cost;
 		ArrayXXd points;
 		void interp(double state[], double time);
+		// void update(double state_i[], double state_g[], double a_i = 0., const double weights[] = cost_weights, const double limits[] = kinematic_limits);
 	};
 
 
 	Traj opt_traj(double state_i[], double state_g[], double a_i = 0., const double weights[] = cost_weights, const double limits[] = kinematic_limits);
+
+	struct Planner
+	{
+		Planner();
+		//Planner(int Flag, double time, double state_i[], double state_g[], double a_i = 0., const double weights[] = cost_weights, const double limits[] = kinematic_limits);
+		~Planner();
+
+		void update(double state_i[], double state_g[], double start_time=0., double a_i = 0., const double weights[] = cost_weights, const double limits[] = kinematic_limits);
+		void reset();
+		void interp(double time, double state[]);
+
+		double start_time;
+		double end_time;
+		bool start_planning;
+		bool end_planning;
+		double start_state[5];
+		double goal_state[5];
+
+		double r[5];
+		double u[4];
+	};
 }
 
 #endif
